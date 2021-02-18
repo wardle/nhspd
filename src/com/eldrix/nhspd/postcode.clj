@@ -1,5 +1,5 @@
 (ns com.eldrix.nhspd.postcode
-  "Functionality to support UK postcode normalization and formatting."
+  "UK postcode normalization and formatting."
   (:require
     [clojure.string :as str]))
 
