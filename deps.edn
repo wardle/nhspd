@@ -16,6 +16,11 @@
            org.apache.sis.non-free/sis-embedded-data {:mvn/version "1.0"}}
 
  :aliases {
+           :download
+           {:extra-deps {ch.qos.logback/logback-classic {:mvn/version "1.2.3"}}
+            :main-opts ["-m" "com.eldrix.nhspd.core"]}
+
+
            :test
            {:extra-paths ["test" "test/resources"]
             :extra-deps  {com.cognitect/test-runner
