@@ -1,0 +1,8 @@
+;;
+;; In the absence of an automated API to permit the identification of new releases of the NHSPD,
+;; we manually track the quarterly releases here.
+
+[{:name "2021-02-01"
+  :url     "https://www.arcgis.com/sharing/rest/content/items/527fe3b014bc4abd852d80f20cd685da/data"}
+ {:name "2020-11-01"
+  :url     "https://www.arcgis.com/sharing/rest/content/items/2e80cf65035c4873af97f70b9ba3560b/data"}]
