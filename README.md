@@ -5,6 +5,15 @@ The NHSPD is published by the Office of National Statistics in the UK.
 
 ## Getting started
 
+You will need to [install clojure](https://clojure.org/guides/getting_started), if you don't already have it installed.
+
+For example, on Mac OS X:
+
+```shell
+brew install clojure/tools/clojure
+```
+
+
 1. Create the postcode index
 2. Run a web service
 3. Use as a library
@@ -13,11 +22,11 @@ The NHSPD is published by the Office of National Statistics in the UK.
 
 To download and create a searchable index, run the following command:
 
-This will download the latest NHSPD release and create an index in the directory `/tmp/nhspd-2021-02`:
-
 ```shell
 clj -M:download /tmp/nhspd-2021-02
 ```
+
+This will download the latest NHSPD release and create an index in the directory `/tmp/nhspd-2021-02`:
 
 ### 2. Run a web service
 
@@ -29,6 +38,8 @@ Here we start using the index `/tmp/nhspd-2021-02` created above, publishing on 
 ```shell
 clj -M:serve /tmp/nhspd-2021-02 8080
 ```
+
+Once running, a simple REST server will be running that will provide data on a UK postcode:
 
 ```shell
 http localhost:8080/v1/nhspd/CF144XW
@@ -42,6 +53,8 @@ HTTP/1.1 200 OK
 ```
 
 ### 3. Use as a library
+
+This is the main intended use of this code as part of my wider PatientCare electronic health and care record system.
 
 Include NHSPD in your deps.edn file (remember to use the latest SHA):
 
