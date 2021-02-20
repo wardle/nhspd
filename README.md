@@ -18,13 +18,34 @@ This will download the latest NHSPD release and create an index in the directory
 clj -M:download /tmp/nhspd-2021-02
 ```
 
-### 2. Use as a library
+### 2. Run a web service
+
+This code is designed to be used as a library in a larger server application. 
+However, if you wish, you can run a simple web service on any given port.
+Here we start using the index `/tmp/nhspd-2021-02` created above, publishing on port 8080.
+
+```shell
+clj -M:serve /tmp/nhspd-2021-02 8080
+```
+
+```shell
+http localhost:8080/v1/nhspd/CF144XW
+```
+
+Result:
+```
+HTTP/1.1 200 OK
+
+{"CANNET" "N95", "PCDS" "CF14 4XW", "NHSER" "W92", "SCN" "N95", "PSED" "62UBFL16", "CTRY" "W92000004", "OA01" "W00009154", "HRO" "W00", "OLDHA" "QW2", "RGN" "W99999999", "OSWARD" "W05000864", "LSOA01" "W01001770", "OSNRTH1M" 179319, "CANREG" "Y1101", "OSHLTHAU" "7A4", "CALNCV" "W99999999", "OSGRDIND" "1", "MSOA11" "W02000384", "MSOA01" "W02000384", "WARD98" "00PTMM", "OLDHRO" "W00", "CENED" "TNFL16", "OLDPCT" "6A8", "USERTYPE" "0", "OSEAST1M" 317551, "PCT" "7A4", "PCD2" "CF14 4XW", "NHSRLO" "W92", "OSNRTH100M" 1793, "DOTERM" "", "STP" "W92", "OSLAUA" "W06000015", "OSHAPREV" "Q99", "EDIND" "1", "LSOA11" "W01001770", "UR01IND" "5", "CCG" "7A4", "OSEAST100M" 3175, "DOINTR" "199906", "PCON" "W07000051", "ODSLAUA" "052", "OA11" "W00009154", "OSCTY" "W99999999"}
+```
+
+### 3. Use as a library
 
 Include NHSPD in your deps.edn file (remember to use the latest SHA):
 
 ```clojure
 [com.eldrix.nhspd {:git/url "https://github.com/wardle/nhspd.git"
-                    :sha     "4300f330841f58c0980412b225e1a397349e6522"}
+                    :sha     "8de18b7038a9b4b8cbf6d829a128b8a71f19d978"}
 ```
 
 And then in your code:
