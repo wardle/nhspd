@@ -6,7 +6,8 @@ The NHSPD is published by the Office of National Statistics in the UK.
 ## Getting started
 
 1. Create the postcode index
-2. Use as a library
+2. Run a web service
+3. Use as a library
 
 ### 1. Create the postcode index
 
@@ -21,6 +22,7 @@ clj -M:download /tmp/nhspd-2021-02
 ### 2. Run a web service
 
 This code is designed to be used as a library in a larger server application. 
+
 However, if you wish, you can run a simple web service on any given port.
 Here we start using the index `/tmp/nhspd-2021-02` created above, publishing on port 8080.
 
@@ -61,5 +63,5 @@ And then in your code:
 mappings to different health and care data. In this example, we use those data to calculate
 a crude distance between those two postcodes.
 
-
+When used a library, the code to run as a web service is not included, by design.
 
