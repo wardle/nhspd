@@ -18,8 +18,8 @@
  :aliases {
            :serve
            {:extra-paths ["serve"]
-            :extra-deps  {io.pedestal/pedestal.service     {:mvn/version "0.5.8"}
-                          io.pedestal/pedestal.jetty       {:mvn/version "0.5.8"}
+            :extra-deps  {io.pedestal/pedestal.service   {:mvn/version "0.5.8"}
+                          io.pedestal/pedestal.jetty     {:mvn/version "0.5.8"}
                           ch.qos.logback/logback-classic {:mvn/version "1.2.3"}}
             :main-opts   ["-m" "com.eldrix.nhspd.serve"]}
 
