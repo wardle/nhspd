@@ -32,6 +32,8 @@ clj -M:download /tmp/nhspd-2021-02
 
 This will download the latest NHSPD release and create an index in the directory `/tmp/nhspd-2021-02`:
 
+The process of downloading and indexing takes 2-3 minutes on my laptop.
+
 ### 2. Run a web service
 
 This code is designed to be used as a library in a larger server application. 
@@ -43,11 +45,21 @@ Here we start using the index `/tmp/nhspd-2021-02` created above, publishing on 
 clj -M:serve /tmp/nhspd-2021-02 8080
 ```
 
-Once running, a simple REST server will be running that will provide data on a UK postcode:
+Once running, a simple REST server will provide data on a UK postcode:
 
 ```shell
 http localhost:8080/v1/nhspd/CF144XW
 ```
+
+Entered postcodes will be normalized to the PCD2 standard. 
+This means the following are equivalent:
+
+```shell
+http localhost:8080/v1/nhspd/CF14%204XW
+http localhost:8080/v1/nhspd/CF14%20%204xw
+http localhost:8080/v1/nhspd/cf144x%20w
+```
+
 
 Result:
 ```
@@ -55,6 +67,9 @@ HTTP/1.1 200 OK
 
 {"CANNET" "N95", "PCDS" "CF14 4XW", "NHSER" "W92", "SCN" "N95", "PSED" "62UBFL16", "CTRY" "W92000004", "OA01" "W00009154", "HRO" "W00", "OLDHA" "QW2", "RGN" "W99999999", "OSWARD" "W05000864", "LSOA01" "W01001770", "OSNRTH1M" 179319, "CANREG" "Y1101", "OSHLTHAU" "7A4", "CALNCV" "W99999999", "OSGRDIND" "1", "MSOA11" "W02000384", "MSOA01" "W02000384", "WARD98" "00PTMM", "OLDHRO" "W00", "CENED" "TNFL16", "OLDPCT" "6A8", "USERTYPE" "0", "OSEAST1M" 317551, "PCT" "7A4", "PCD2" "CF14 4XW", "NHSRLO" "W92", "OSNRTH100M" 1793, "DOTERM" "", "STP" "W92", "OSLAUA" "W06000015", "OSHAPREV" "Q99", "EDIND" "1", "LSOA11" "W01001770", "UR01IND" "5", "CCG" "7A4", "OSEAST100M" 3175, "DOINTR" "199906", "PCON" "W07000051", "ODSLAUA" "052", "OA11" "W00009154", "OSCTY" "W99999999"}
 ```
+
+If a postcode cannot be found, or an invalid postcode is entered, the server
+will respond with a 404 response ('not found').
 
 ### 3. Use as a library
 
