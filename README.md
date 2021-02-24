@@ -1,4 +1,8 @@
 # NHSPD
+
+[![Scc Count Badge](https://sloc.xyz/github/wardle/nhspd)](https://github.com/wardle/nhspd/)
+[![Scc Cocomo Badge](https://sloc.xyz/github/wardle/nhspd?category=cocomo&avg-wage=100000)](https://github.com/wardle/nhspd/)
+
 Support for the UK NHS Postcode Directory, linking all UK postcodes to health data.
 
 The NHSPD is published by the Office of National Statistics in the UK.
