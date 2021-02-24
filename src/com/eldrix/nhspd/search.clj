@@ -61,9 +61,8 @@
   "Fetch the postcode `pc` specified.
    - pc : a UK postal code; will be coerced into the PCD2 postcode standard."
   [^IndexSearcher searcher pc]
-  (let [pc' (pcode/normalize pc)
-        score-doc ^ScoreDoc (first (seq (.-scoreDocs ^TopDocs (.search searcher (TermQuery. (Term. "pcd2" pc')) 1))))]
-    (when score-doc
+  (when-let [pc' (pcode/normalize pc)]
+    (when-let [score-doc ^ScoreDoc (first (seq (.-scoreDocs ^TopDocs (.search searcher (TermQuery. (Term. "pcd2" pc')) 1))))]
       (when-let [doc (.doc searcher (.-doc score-doc))]
         (nippy/thaw (.-bytes (.getBinaryValue doc "pc")))))))
 
@@ -86,7 +85,7 @@
   (.numDocs reader)
   (def searcher (IndexSearcher. reader))
   (fetch-postcode searcher nil)
-  (fetch-wgs84 searcher )
+  (fetch-wgs84 searcher nil)
 
   (com.eldrix.nhspd.postcode/distance-between
     (fetch-postcode searcher "CF47 9DT")
