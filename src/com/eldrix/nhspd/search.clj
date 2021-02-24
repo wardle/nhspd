@@ -3,12 +3,13 @@
   This is currently using Apache Lucene as a key-value store but its indexing
   capabilities support future plans for better geographical queries."
   (:require [clojure.core.async :as a]
+            [clojure.tools.logging.readable :as log]
             [com.eldrix.nhspd.coords :as coords]
             [com.eldrix.nhspd.postcode :as pcode]
             [taoensso.nippy :as nippy])
   (:import (org.apache.lucene.index Term IndexWriter IndexWriterConfig DirectoryReader IndexWriterConfig$OpenMode IndexReader)
            (org.apache.lucene.store FSDirectory)
-           (org.apache.lucene.document Document Field$Store StoredField StringField LatLonPoint)
+           (org.apache.lucene.document Document Field$Store StoredField StringField LatLonPoint TextField)
            (org.apache.lucene.search IndexSearcher TermQuery TopDocs ScoreDoc)
            (org.apache.lucene.analysis.standard StandardAnalyzer)
            (java.nio.file Paths)))
@@ -56,18 +57,37 @@
   (let [directory (FSDirectory/open (Paths/get filename (into-array String [])))]
     (DirectoryReader/open directory)))
 
-(defn fetch-postcode [^IndexSearcher searcher pc]
+(defn fetch-postcode
+  "Fetch the postcode `pc` specified.
+   - pc : a UK postal code; will be coerced into the PCD2 postcode standard."
+  [^IndexSearcher searcher pc]
   (let [pc' (pcode/normalize pc)
         score-doc ^ScoreDoc (first (seq (.-scoreDocs ^TopDocs (.search searcher (TermQuery. (Term. "pcd2" pc')) 1))))]
     (when score-doc
       (when-let [doc (.doc searcher (.-doc score-doc))]
         (nippy/thaw (.-bytes (.getBinaryValue doc "pc")))))))
 
+(defn fetch-wgs84
+  "Returns WGS84 geographical coordinates for a given postcode.
+   - pc : a UK postal code; will be coerced into the PCD2 postcode standard."
+  [^IndexSearcher searcher pc]
+  (let [postcode (fetch-postcode searcher pc)
+        osnrth1m (get postcode "OSNRTH1M")
+        oseast1m (get postcode "OSEAST1M")]
+    (when (and osnrth1m oseast1m)
+      (seq (@coords/raw-osgb36->wgs84 osnrth1m oseast1m)))))
+
 (comment
   (make-postcode-doc {"PCDS" "CF14 4XW" "PCD2" "CF14  4XW" "OSEAST1M" 317551 "OSNRTH1M" 179319})
 
   (def reader (open-index-reader "/var/tmp/nhspd-nov-2020"))
   (def searcher (IndexSearcher. reader))
+  (seq (.-scoreDocs (.search searcher (TermQuery. (Term. "version" "1.0")) 1)))
+  (.numDocs reader)
+  (def searcher (IndexSearcher. reader))
+  (fetch-postcode searcher nil)
+  (fetch-wgs84 searcher )
+
   (com.eldrix.nhspd.postcode/distance-between
     (fetch-postcode searcher "CF47 9DT")
     (fetch-postcode searcher "CF14 4XW"))
