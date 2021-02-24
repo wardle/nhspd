@@ -9,18 +9,19 @@
   not possible.
   This is the PCD2 standard formatting."
   [pc]
-  (let [pc' (str/replace pc #"\s+" "")
-        n (count pc')]
-    (if-not (>= n 5)
-      pc
-      (str/upper-case (format "%-4s %3s" (subs pc' 0 (- n 3)) (subs pc' (- n 3)))))))
+  (when pc
+    (let [pc' (str/replace pc #"\s+" "")
+          n (count pc')]
+      (if-not (>= n 5)
+        pc
+        (str/upper-case (format "%-4s %3s" (subs pc' 0 (- n 3)) (subs pc' (- n 3))))))))
 
 (defn ^String egif
   "Normalizes a postcode into uppercase with outward code and inward codes
   separated by a single space.
   This is the PCDS standard formatting."
   [pc]
-  (str/replace (normalize pc) #"\s+" " "))
+  (when pc (str/replace (normalize pc) #"\s+" " ")))
 
 (defn distance-between
   "Calculates crude distance between two postcodes, determined by the square
