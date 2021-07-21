@@ -3,6 +3,10 @@
 ;; we manually track the quarterly releases here.
 
 [{:name "2021-02-01"
-  :url     "https://www.arcgis.com/sharing/rest/content/items/527fe3b014bc4abd852d80f20cd685da/data"}
+  :url  "https://www.arcgis.com/sharing/rest/content/items/527fe3b014bc4abd852d80f20cd685da/data"}
  {:name "2020-11-01"
-  :url     "https://www.arcgis.com/sharing/rest/content/items/2e80cf65035c4873af97f70b9ba3560b/data"}]
+  :url  "https://www.arcgis.com/sharing/rest/content/items/2e80cf65035c4873af97f70b9ba3560b/data"}
+ {:name "2021-02-12"
+  :url  "https://www.arcgis.com/sharing/rest/content/items/4585e01a3cd94dda8a64742239781753/data"}
+ {:name "2021-05-17"
+  :url  "https://www.arcgis.com/sharing/rest/content/items/f9922a4ddcb1402fb6a3a8664d9867b5/data"}]
