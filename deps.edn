@@ -12,8 +12,7 @@
            org.apache.lucene/lucene-core             {:mvn/version "8.8.0"}
            org.apache.lucene/lucene-queries          {:mvn/version "8.8.0"}
 
-           org.apache.sis.core/sis-referencing       {:mvn/version "1.0"}
-           org.apache.sis.non-free/sis-embedded-data {:mvn/version "1.0"}}
+           uk.gov.dstl.geo/osgb                      {:mvn/version "1.0.3"}}
 
  :aliases {
            :serve
