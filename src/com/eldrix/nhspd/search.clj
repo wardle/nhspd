@@ -24,8 +24,8 @@
               (.add (StringField. "pcd2" ^String PCD2 Field$Store/NO))
               (.add (StoredField. "pc" ^bytes (nippy/freeze pc))))]
     (if (and OSNRTH1M OSEAST1M)
-      (let [loc ^doubles (@coords/raw-osgb36->wgs84 OSEAST1M OSNRTH1M)]
-        (doto doc (.add (LatLonPoint. "wgs84" (aget loc 0) (aget loc 1)))))
+      (let [latlon ^doubles (coords/osgb36->wgs84* OSEAST1M OSNRTH1M)]
+        (doto doc (.add (LatLonPoint. "wgs84" (aget latlon 0) (aget latlon 1)))))
       doc)))
 
 (defn write-batch! [^IndexWriter writer postcodes]
@@ -74,7 +74,7 @@
         osnrth1m (get postcode "OSNRTH1M")
         oseast1m (get postcode "OSEAST1M")]
     (when (and osnrth1m oseast1m)
-      (seq (@coords/raw-osgb36->wgs84 osnrth1m oseast1m)))))
+      (seq (coords/osgb36->wgs84* oseast1m osnrth1m)))))
 
 (comment
   (make-postcode-doc {"PCDS" "CF14 4XW" "PCD2" "CF14  4XW" "OSEAST1M" 317551 "OSNRTH1M" 179319})

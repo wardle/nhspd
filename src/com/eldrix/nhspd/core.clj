@@ -7,11 +7,9 @@
            (java.io Closeable)))
 
 (defprotocol NHSPD
-  "The NHSPD service provides facilities for managing the NHS postcode directory.
-  Currently this is a simple fetch of a single postcode, but it will support
-  geographical queries for postcodes."
+  "The NHSPD service provides facilities for managing the NHS postcode directory."
   (fetch-postcode [this pc] "Fetch the raw data from NHSPD.")
-  (fetch-wgs84 [this pc] "Fetch grid coordinates for a postcode."))
+  (fetch-wgs84 [this pc] "Fetch grid coordinates (WGS84 lat/long) for a postcode."))
 
 (defn open-index
   "Open an NHSPD index from the directory specified.
