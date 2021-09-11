@@ -27,6 +27,14 @@ brew install clojure/tools/clojure
 To download and create a searchable index, run the following command:
 
 ```shell
+clj -M:download 
+```
+
+This will download the latest NHSPD release and index it in a file-based directory
+in the current directory.
+
+Or: 
+```shell
 clj -M:download /tmp/nhspd-2021-02
 ```
 
@@ -48,24 +56,66 @@ clj -M:serve /tmp/nhspd-2021-02 8080
 Once running, a simple REST server will provide data on a UK postcode:
 
 ```shell
-http localhost:8080/v1/nhspd/CF144XW
+http -j localhost:8080/v1/nhspd/CF144XW
 ```
 
 Entered postcodes will be normalized to the PCD2 standard. 
 This means the following are equivalent:
 
 ```shell
-http localhost:8080/v1/nhspd/CF14%204XW
-http localhost:8080/v1/nhspd/CF14%20%204xw
-http localhost:8080/v1/nhspd/cf144x%20w
+http -j localhost:8080/v1/nhspd/CF14%204XW
+http -j localhost:8080/v1/nhspd/CF14%20%204xw
+http -j localhost:8080/v1/nhspd/cf144x%20w
 ```
 
 
 Result:
-```
-HTTP/1.1 200 OK
-
-{"CANNET" "N95", "PCDS" "CF14 4XW", "NHSER" "W92", "SCN" "N95", "PSED" "62UBFL16", "CTRY" "W92000004", "OA01" "W00009154", "HRO" "W00", "OLDHA" "QW2", "RGN" "W99999999", "OSWARD" "W05000864", "LSOA01" "W01001770", "OSNRTH1M" 179319, "CANREG" "Y1101", "OSHLTHAU" "7A4", "CALNCV" "W99999999", "OSGRDIND" "1", "MSOA11" "W02000384", "MSOA01" "W02000384", "WARD98" "00PTMM", "OLDHRO" "W00", "CENED" "TNFL16", "OLDPCT" "6A8", "USERTYPE" "0", "OSEAST1M" 317551, "PCT" "7A4", "PCD2" "CF14 4XW", "NHSRLO" "W92", "OSNRTH100M" 1793, "DOTERM" "", "STP" "W92", "OSLAUA" "W06000015", "OSHAPREV" "Q99", "EDIND" "1", "LSOA11" "W01001770", "UR01IND" "5", "CCG" "7A4", "OSEAST100M" 3175, "DOINTR" "199906", "PCON" "W07000051", "ODSLAUA" "052", "OA11" "W00009154", "OSCTY" "W99999999"}
+```json
+{
+    "CALNCV": "W99999999",
+    "CANNET": "N95",
+    "CANREG": "Y1101",
+    "CCG": "7A4",
+    "CENED": "TNFL16",
+    "CTRY": "W92000004",
+    "DOINTR": "199906",
+    "DOTERM": "",
+    "EDIND": "1",
+    "HRO": "W00",
+    "LSOA01": "W01001770",
+    "LSOA11": "W01001770",
+    "MSOA01": "W02000384",
+    "MSOA11": "W02000384",
+    "NHSER": "W92",
+    "NHSRLO": "W92",
+    "OA01": "W00009154",
+    "OA11": "W00009154",
+    "ODSLAUA": "052",
+    "OLDHA": "QW2",
+    "OLDHRO": "W00",
+    "OLDPCT": "6A8",
+    "OSCTY": "W99999999",
+    "OSEAST100M": 3175,
+    "OSEAST1M": 317551,
+    "OSGRDIND": "1",
+    "OSHAPREV": "Q99",
+    "OSHLTHAU": "7A4",
+    "OSLAUA": "W06000015",
+    "OSNRTH100M": 1793,
+    "OSNRTH1M": 179319,
+    "OSWARD": "W05000864",
+    "PCD2": "CF14 4XW",
+    "PCDS": "CF14 4XW",
+    "PCON": "W07000051",
+    "PCT": "7A4",
+    "PSED": "62UBFL16",
+    "RGN": "W99999999",
+    "SCN": "N95",
+    "STP": "W92",
+    "UR01IND": "5",
+    "USERTYPE": "0",
+    "WARD98": "00PTMM"
+}
 ```
 
 If a postcode cannot be found, or an invalid postcode is entered, the server
