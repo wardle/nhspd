@@ -2,11 +2,14 @@
 ;; In the absence of an automated API to permit the identification of new releases of the NHSPD,
 ;; we manually track the quarterly releases here.
 
-[{:name "2021-02-01"
-  :url  "https://www.arcgis.com/sharing/rest/content/items/527fe3b014bc4abd852d80f20cd685da/data"}
- {:name "2020-11-01"
+;; For the updated list, see https://geoportal.statistics.gov.uk/datasets/527fe3b014bc4abd852d80f20cd685da/about
+
+[{:date "2020-11-01"
   :url  "https://www.arcgis.com/sharing/rest/content/items/2e80cf65035c4873af97f70b9ba3560b/data"}
- {:name "2021-02-12"
+ {:date "2021-02-12"
   :url  "https://www.arcgis.com/sharing/rest/content/items/4585e01a3cd94dda8a64742239781753/data"}
- {:name "2021-05-17"
-  :url  "https://www.arcgis.com/sharing/rest/content/items/f9922a4ddcb1402fb6a3a8664d9867b5/data"}]
+ {:date "2021-05-17"
+  :url  "https://www.arcgis.com/sharing/rest/content/items/f9922a4ddcb1402fb6a3a8664d9867b5/data"}
+ {:date "2021-08-16"
+  :url  "https://www.arcgis.com/sharing/rest/content/items/b485aaea60fa444e9f43d604dad1bc85/data"}
+ ]

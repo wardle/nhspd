@@ -4,7 +4,8 @@
             [com.eldrix.nhspd.search :as search]
             [clojure.core.async :as a])
   (:import (org.apache.lucene.search IndexSearcher)
-           (java.io Closeable)))
+           (java.io Closeable)
+           (java.time.format DateTimeFormatter)))
 
 (defprotocol NHSPD
   "The NHSPD service provides facilities for managing the NHS postcode directory."
@@ -31,6 +32,9 @@
   Parameters:
   - dir : directory in which to build the index
   - in  : java.io.File or filename of the NHSPD zip file."
+  ([]
+   (let [dir (str "nhspd-" (.format (:date (dl/get-latest-release)) DateTimeFormatter/ISO_DATE) ".db")]
+     (write-index dir)))
   ([dir]
    (let [ch (a/chan 1 (partition-all 10000))]
      (a/thread (dl/stream-latest-release ch))
@@ -41,9 +45,10 @@
      (search/build-index ch dir))))
 
 (defn -main [& args]
-  (if-not (= 1 (count args))
-    (println "Missing directory. Usage: nhspd <dir> where dir is index directory (e.g. /var/nhspd)")
-    (write-index (first args))))
+  (case (count args)
+    0 (write-index)
+    1 (write-index (first args))
+    (println "Usage: nhspd <dir> where dir is index directory (e.g. /var/nhspd")))
 
 (comment
   (def nhspd (open-index "/var/tmp/nhspd-nov-2020"))
