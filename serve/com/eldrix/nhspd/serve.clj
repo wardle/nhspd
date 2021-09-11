@@ -10,7 +10,7 @@
 
 (set! *warn-on-reflection* true)
 
-(def supported-types ["application/edn" "application/json" "text/plain"])
+(def supported-types ["application/json"  "application/edn" "text/plain"])
 (def content-neg-intc (conneg/negotiate-content supported-types))
 
 (defn response [status body & {:as headers}]
@@ -90,8 +90,11 @@
 
 (defn start-server
   [nhspd-svc port]
-   (log/info "starting server on port " port)
-   (http/start (create-server nhspd-svc port true)))
+  (if-not (= "CF14 4XW" (get (nhspd/fetch-postcode nhspd-svc "CF14 4XW") "PCD2"))
+    (do (log/error "Uninitialised index.")
+        (System/exit 1))
+    (do (log/info "starting server on port " port)
+        (http/start (create-server nhspd-svc port true)))))
 
 (defn stop-server [server]
   (http/stop server))
