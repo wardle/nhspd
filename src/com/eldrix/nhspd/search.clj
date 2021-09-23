@@ -4,7 +4,7 @@
   capabilities support future plans for better geographical queries."
   (:require [clojure.core.async :as a]
             [clojure.tools.logging.readable :as log]
-            [com.eldrix.nhspd.coords :as coords]
+            [geocoordinates.core :as geo]
             [com.eldrix.nhspd.postcode :as pcode]
             [taoensso.nippy :as nippy])
   (:import (org.apache.lucene.index Term IndexWriter IndexWriterConfig DirectoryReader IndexWriterConfig$OpenMode IndexReader)
@@ -24,8 +24,8 @@
               (.add (StringField. "pcd2" ^String PCD2 Field$Store/NO))
               (.add (StoredField. "pc" ^bytes (nippy/freeze pc))))]
     (if (and OSNRTH1M OSEAST1M)
-      (let [latlon ^doubles (coords/osgb36->wgs84* OSEAST1M OSNRTH1M)]
-        (doto doc (.add (LatLonPoint. "wgs84" (aget latlon 0) (aget latlon 1)))))
+      (let [latlon (geo/easting-northing->latitude-longitude {:easting OSEAST1M :northing OSNRTH1M} :national-grid)]
+        (doto doc (.add (LatLonPoint. "wgs84" (:latitude latlon) (:longitude latlon)))))
       doc)))
 
 (defn write-batch! [^IndexWriter writer postcodes]
@@ -74,7 +74,8 @@
         osnrth1m (get postcode "OSNRTH1M")
         oseast1m (get postcode "OSEAST1M")]
     (when (and osnrth1m oseast1m)
-      (seq (coords/osgb36->wgs84* oseast1m osnrth1m)))))
+      (let [latlon (geo/easting-northing->latitude-longitude {:easting oseast1m :northing osnrth1m} :national-grid)]
+        (vector (:latitude latlon) (:longitude latlon))))))
 
 (comment
   (make-postcode-doc {"PCDS" "CF14 4XW" "PCD2" "CF14  4XW" "OSEAST1M" 317551 "OSNRTH1M" 179319})
