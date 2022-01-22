@@ -2,6 +2,7 @@
 
 [![Scc Count Badge](https://sloc.xyz/github/wardle/nhspd)](https://github.com/wardle/nhspd/)
 [![Scc Cocomo Badge](https://sloc.xyz/github/wardle/nhspd?category=cocomo&avg-wage=100000)](https://github.com/wardle/nhspd/)
+[![Clojars Project](https://img.shields.io/clojars/v/com.eldrix/nhspd.svg)](https://clojars.org/com.eldrix/nhspd)
 
 Support for the UK NHS Postcode Directory, linking all UK postcodes to health data.
 

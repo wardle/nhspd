@@ -14,7 +14,10 @@
 
            geocoordinates/geocoordinates    {:mvn/version "0.1.0"}}
 
- :aliases {
+ :aliases {:build {:deps       {io.github.clojure/tools.build {:git/tag "v0.7.5" :git/sha "34727f7"}
+                                slipset/deps-deploy           {:mvn/version "RELEASE"}}
+                   :ns-default build}
+
            :serve
            {:extra-paths ["serve"]
             :extra-deps  {io.pedestal/pedestal.service   {:mvn/version "0.5.9"}
@@ -67,11 +70,4 @@
            :jar
            {:replace-deps {seancorfield/depstar {:mvn/version "2.0.216"}}
             :exec-fn      hf.depstar/jar
-            :exec-args    {:jar "target/nhspd-v0.1.0.jar"}}
-
-           :uberjar
-           {:replace-deps {seancorfield/depstar {:mvn/version "2.0.216"}}
-            :exec-fn      hf.depstar/uberjar
-            :exec-args    {:jar        "target/nhspd-full-v0.1.0.jar"
-                           :aot        true
-                           :main-class "com.eldrix.nhspd.core"}}}}
+            :exec-args    {:jar "target/nhspd-v0.1.0.jar"}}}}
