@@ -19,7 +19,11 @@
                 :lib       lib
                 :version   version
                 :basis     basis
-                :src-dirs  ["src"]})
+                :src-dirs  ["src"]
+                :scm       {:url                 "https://github.com/wardle/nhspd"
+                            :tag                 (str "v" version)
+                            :connection          "scm:git:git://github.com/wardle/nhspd.git"
+                            :developerConnection "scm:git:ssh://git@github.com/wardle/nhspd.git"}})
   (b/copy-dir {:src-dirs   ["src" "resources"]
                :target-dir class-dir})
   (b/jar {:class-dir class-dir
