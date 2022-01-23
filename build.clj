@@ -15,6 +15,7 @@
   "Create a library jar file."
   [_]
   (clean nil)
+  (println "Building" lib version)
   (b/write-pom {:class-dir class-dir
                 :lib       lib
                 :version   version
@@ -26,6 +27,7 @@
                             :developerConnection "scm:git:ssh://git@github.com/wardle/nhspd.git"}})
   (b/copy-dir {:src-dirs   ["src" "resources"]
                :target-dir class-dir})
+
   (b/jar {:class-dir class-dir
           :jar-file  jar-file}))
 
