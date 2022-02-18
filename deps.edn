@@ -65,9 +65,4 @@
 
            :lint/eastwood
            {:main-opts  ["-m" "eastwood.lint" {:source-paths ["src"]}]
-            :extra-deps {jonase/eastwood {:mvn/version "RELEASE"}}}
-
-           :jar
-           {:replace-deps {seancorfield/depstar {:mvn/version "2.0.216"}}
-            :exec-fn      hf.depstar/jar
-            :exec-args    {:jar "target/nhspd-v0.1.0.jar"}}}}
+            :extra-deps {jonase/eastwood {:mvn/version "RELEASE"}}}}}
