@@ -12,4 +12,8 @@
   :url  "https://www.arcgis.com/sharing/rest/content/items/f9922a4ddcb1402fb6a3a8664d9867b5/data"}
  {:date "2021-08-16"
   :url  "https://www.arcgis.com/sharing/rest/content/items/b485aaea60fa444e9f43d604dad1bc85/data"}
+ {:date "2021-11-01"
+  :url  "https://www.arcgis.com/sharing/rest/content/items/96faf54956b14e65a7e7bd004bb915fe/data"}
+ {:date "2022-02-01"
+  :url  "https://www.arcgis.com/sharing/rest/content/items/527fe3b014bc4abd852d80f20cd685da/data"}
  ]
