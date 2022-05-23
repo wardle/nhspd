@@ -60,7 +60,7 @@
 
   (write-index "/var/tmp/nhspd-nov-2020--2" "/Users/mark/Downloads/nhspd-nov-2020.zip")
   (with-open [nhspd (open-index "/var/tmp/nhspd-nov-2020--2")]
-    (fetch-postcode nhspd "CF14 4XW"))
+    (fetch-postcode nhspd "CF14 4XW")))
 
-  )
+
 

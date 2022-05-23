@@ -49,5 +49,4 @@
   (def nhspd "/Users/mark/Downloads/NHSPD_FEB_2020_UK_FULL/Data/nhg20feb.csv")
   (def ch (async/chan))
   (async/thread (import-postcodes nhspd ch))
-  (async/<!! ch)
-  )
+  (async/<!! ch))

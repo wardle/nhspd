@@ -91,5 +91,4 @@
   (com.eldrix.nhspd.postcode/distance-between
     (fetch-postcode searcher "CF47 9DT")
     (fetch-postcode searcher "CF14 4XW"))
-  (.close reader)
-  )
+  (.close reader))
