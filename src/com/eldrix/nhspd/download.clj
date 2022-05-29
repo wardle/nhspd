@@ -2,12 +2,12 @@
   (:require [clojure.core.async :as a]
             [clojure.edn :as edn]
             [clojure.java.io :as io]
-            [clj-http.client :as client]
+            [org.httpkit.client :as http]
             [com.eldrix.nhspd.parse :as parse]
             [clojure.tools.logging :as log])
   (:import (java.io File)
-           (java.util.zip ZipFile)
-           (java.time LocalDate)))
+           (java.time LocalDate)
+           (java.util.zip ZipFile)))
 
 (defn download-url
   "Download a file from the URL specified.
@@ -17,7 +17,7 @@
   If no `out` specified, a temporary file will be created and returned."
   ([url] (download-url url (File/createTempFile "nhspd" ".zip")))
   ([url out]
-   (io/copy (:body (client/get url {:as :stream})) out)
+   (io/copy (:body @(http/get url {:as :stream})) out)
    out))
 
 (defn get-latest-release
@@ -54,7 +54,7 @@
   ([ch delete? close?]
    (let [release (get-latest-release)
          possibly-outdated? (.isAfter (LocalDate/now) (.plusMonths (:date release) 3))
-         _ (log/info "Downloading NHSPD release " (:date release) " from " (:url release))
+         _ (log/info "Downloading NHSPD release" (:date release) "from" (:url release))
          _ (when possibly-outdated? (log/warn "Latest known NHSPD release more than 3 months old; metadata likely needs updating.")
                                     (log/warn "Raise an issue on https://github.com/wardle/nhspd/issues"))
          downloaded (download-url (:url release))]
@@ -76,5 +76,4 @@
 
   (def ch (a/chan))
   (a/thread (stream-release downloaded ch))
-  (a/<!! ch)
-  )
+  (a/<!! ch))

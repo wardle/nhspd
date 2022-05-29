@@ -5,14 +5,13 @@
            org.clojure/data.csv                     {:mvn/version "1.0.1"}
            org.clojure/tools.logging                {:mvn/version "1.2.4"}
 
-           clj-http/clj-http                        {:mvn/version "3.12.3"}
-           ;     jakarta.xml.bind/jakarta.xml.bind-api {:mvn/version "3.0.1"}
-           com.taoensso/nippy                       {:mvn/version "3.1.1"}
 
-           org.apache.lucene/lucene-core            {:mvn/version "9.1.0"}
-           org.apache.lucene/lucene-queries         {:mvn/version "9.1.0"}
-           org.apache.lucene/lucene-backward-codecs {:mvn/version "9.1.0"}
-           geocoordinates/geocoordinates            {:mvn/version "0.1.0"}}
+           com.taoensso/nippy                       {:mvn/version "3.1.1"}
+           org.apache.lucene/lucene-core            {:mvn/version "9.2.0"}
+           org.apache.lucene/lucene-queries         {:mvn/version "9.2.0"}
+           org.apache.lucene/lucene-backward-codecs {:mvn/version "9.2.0"}
+           geocoordinates/geocoordinates            {:mvn/version "0.1.0"}
+           http-kit/http-kit                        {:mvn/version "2.5.3"}}
 
  :aliases {:build {:deps       {io.github.clojure/tools.build {:git/tag "v0.8.2" :git/sha "ba1a2bf"}
                                 slipset/deps-deploy           {:mvn/version "RELEASE"}}
