@@ -6,5 +6,5 @@
   [oseast1m osnrth1m]
   (when (and osnrth1m oseast1m)
     (let [latlon (geo/easting-northing->latitude-longitude {:easting oseast1m :northing osnrth1m} :national-grid)]
-      {:urn.ogc.def.crs.EPSG.4326/latitude  (:latitide latlon)
+      {:urn.ogc.def.crs.EPSG.4326/latitude  (:latitude latlon)
        :urn.ogc.def.crs.EPSG.4326/longitude (:longitude latlon)})))
