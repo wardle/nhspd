@@ -6,12 +6,12 @@
            org.clojure/tools.logging                {:mvn/version "1.2.4"}
 
 
-           com.taoensso/nippy                       {:mvn/version "3.1.1"}
-           org.apache.lucene/lucene-core            {:mvn/version "9.2.0"}
-           org.apache.lucene/lucene-queries         {:mvn/version "9.2.0"}
-           org.apache.lucene/lucene-backward-codecs {:mvn/version "9.2.0"}
-           http-kit/http-kit                        {:mvn/version "2.5.3"}}
+           com.taoensso/nippy                       {:mvn/version "3.2.0"}
+           org.apache.lucene/lucene-core            {:mvn/version "9.3.0"}
+           org.apache.lucene/lucene-queries         {:mvn/version "9.3.0"}
+           org.apache.lucene/lucene-backward-codecs {:mvn/version "9.3.0"}
            com.eldrix/geocoordinates                {:mvn/version "0.1.15"}
+           http-kit/http-kit                        {:mvn/version "2.6.0"}}
 
  :aliases {:build {:deps       {io.github.clojure/tools.build {:git/tag "v0.8.2" :git/sha "ba1a2bf"}
                                 slipset/deps-deploy           {:mvn/version "RELEASE"}}
@@ -25,7 +25,7 @@
             :main-opts   ["-m" "com.eldrix.nhspd.serve"]}
 
            :download
-           {:extra-deps {ch.qos.logback/logback-classic {:mvn/version "1.2.11"}}
+           {:extra-deps {ch.qos.logback/logback-classic {:mvn/version "1.4.1"}}
             :main-opts  ["-m" "com.eldrix.nhspd.core"]}
 
 
