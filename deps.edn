@@ -10,8 +10,8 @@
            org.apache.lucene/lucene-core            {:mvn/version "9.2.0"}
            org.apache.lucene/lucene-queries         {:mvn/version "9.2.0"}
            org.apache.lucene/lucene-backward-codecs {:mvn/version "9.2.0"}
-           geocoordinates/geocoordinates            {:mvn/version "0.1.0"}
            http-kit/http-kit                        {:mvn/version "2.5.3"}}
+           com.eldrix/geocoordinates                {:mvn/version "0.1.15"}
 
  :aliases {:build {:deps       {io.github.clojure/tools.build {:git/tag "v0.8.2" :git/sha "ba1a2bf"}
                                 slipset/deps-deploy           {:mvn/version "RELEASE"}}
