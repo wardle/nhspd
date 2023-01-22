@@ -1,16 +1,17 @@
 (ns com.eldrix.nhspd.serve
-      (:require [com.eldrix.nhspd.core :as nhspd]
-                [cheshire.core :as json]
-                [clojure.tools.logging.readable :as log]
-                [io.pedestal.http :as http]
-                [io.pedestal.http.content-negotiation :as conneg]
-                [io.pedestal.http.route :as route]
-                [io.pedestal.interceptor :as intc]
-                [ring.util.response :as ring-response]))
+  (:require [com.eldrix.nhspd.core :as nhspd]
+            [cheshire.core :as json]
+            [clojure.tools.logging.readable :as log]
+            [io.pedestal.http :as http]
+            [io.pedestal.http.content-negotiation :as conneg]
+            [io.pedestal.http.route :as route]
+            [io.pedestal.interceptor :as intc]
+            [ring.util.response :as ring-response])
+  (:import (java.net URLDecoder)))
 
 (set! *warn-on-reflection* true)
 
-(def supported-types ["application/json"  "application/edn" "text/plain"])
+(def supported-types ["application/json" "application/edn" "text/plain"])
 (def content-neg-intc (conneg/negotiate-content supported-types))
 
 (defn response [status body & {:as headers}]
@@ -22,8 +23,8 @@
 (def not-found (partial response 404))
 
 (defn accepted-type
-  [context]
-  (get-in context [:request :accept :field] "application/json"))
+  [ctx]
+  (get-in ctx [:request :accept :field] "application/json"))
 
 (defn transform-content
   [body content-type]
@@ -41,40 +42,39 @@
 (def coerce-body
   {:name ::coerce-body
    :leave
-   (fn [context]
-     (if (get-in context [:response :headers "Content-Type"])
-       context
-       (update-in context [:response] coerce-to (accepted-type context))))})
+   (fn [ctx]
+     (if (get-in ctx [:response :headers "Content-Type"])
+       ctx
+       (update-in ctx [:response] coerce-to (accepted-type ctx))))})
 
 (defn inject-svc
   "A simple interceptor to inject service 'svc' into the context."
   [svc]
   {:name  ::inject-svc
-   :enter (fn [context] (update context :request assoc :com.eldrix.nhspd/svc svc))})
+   :enter (fn [ctx] (assoc ctx ::svc svc))})
 
 (def entity-render
   "Interceptor to render an entity '(:result context)' into the response."
   {:name :entity-render
    :leave
-   (fn [context]
-     (if-let [item (:result context)]
-       (assoc context :response (ok item))
-       context))})
+   (fn [{:keys [result] :as ctx}]
+     (if result
+       (assoc ctx :response (ok result))
+       ctx))})
 
 (def get-postcode
   {:name  ::get-postcode
-   :enter (fn [context]
-            (when-let [pc (get-in context [:request :path-params :postcode])]
-              (let [nhspd-svc (get-in context [:request :com.eldrix.nhspd/svc])
-                    pc' (java.net.URLDecoder/decode ^String pc "UTF-8")]
-              (if-let [postcode (nhspd/fetch-postcode nhspd-svc pc')]
-                (assoc context :result postcode)
-                (assoc context :response (ring-response/not-found "Not Found"))))))})
+   :enter (fn [{::keys [svc] :as ctx}]
+            (when-let [pc (get-in ctx [:request :path-params :postcode])]
+              (let [pc' (URLDecoder/decode ^String pc "UTF-8")]
+                (if-let [postcode (nhspd/fetch-postcode svc pc')]
+                  (assoc ctx :result postcode)
+                  (assoc ctx :response (ring-response/not-found "Not Found"))))))})
 
 (def common-routes [coerce-body content-neg-intc entity-render])
 (def routes
   (route/expand-routes
-   #{["/v1/nhspd/:postcode" :get (conj common-routes get-postcode)]}))
+    #{["/v1/nhspd/:postcode" :get (conj common-routes get-postcode)]}))
 
 (def service-map
   {::http/routes routes
@@ -121,6 +121,5 @@
   (def nhspd (nhspd/open-index "/tmp/nhspd-2021-02"))
   (nhspd/fetch-postcode nhspd "CF14 4XW")
   (start-dev nhspd 3000)
-  (stop-dev)
+  (stop-dev))
 
-  )
