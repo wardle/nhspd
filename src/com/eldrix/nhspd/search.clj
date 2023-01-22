@@ -3,13 +3,12 @@
   This is currently using Apache Lucene as a key-value store but its indexing
   capabilities support future plans for better geographical queries."
   (:require [clojure.core.async :as a]
-            [clojure.tools.logging.readable :as log]
             [geocoordinates.core :as geo]
             [com.eldrix.nhspd.postcode :as pcode]
             [taoensso.nippy :as nippy])
   (:import (org.apache.lucene.index Term IndexWriter IndexWriterConfig DirectoryReader IndexWriterConfig$OpenMode IndexReader)
            (org.apache.lucene.store FSDirectory)
-           (org.apache.lucene.document Document Field$Store StoredField StringField LatLonPoint TextField)
+           (org.apache.lucene.document Document Field$Store StoredField StringField LatLonPoint)
            (org.apache.lucene.search IndexSearcher TermQuery TopDocs ScoreDoc)
            (org.apache.lucene.analysis.standard StandardAnalyzer)
            (java.nio.file Paths)))
