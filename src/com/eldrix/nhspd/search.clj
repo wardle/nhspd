@@ -32,8 +32,8 @@
   (dorun (map #(.addDocument writer (make-postcode-doc %)) postcodes))
   (.commit writer))
 
-(defn ^IndexWriter open-index-writer
-  [filename]
+(defn open-index-writer
+  ^IndexWriter [filename]
   (let [analyzer (StandardAnalyzer.)
         directory (FSDirectory/open (Paths/get filename (into-array String [])))
         writer-config (doto (IndexWriterConfig. analyzer)
@@ -52,8 +52,8 @@
         ch))
     (.forceMerge writer 1)))
 
-(defn ^IndexReader open-index-reader
-  [filename]
+(defn open-index-reader
+  ^IndexReader [filename]
   (let [directory (FSDirectory/open (Paths/get filename (into-array String [])))]
     (DirectoryReader/open directory)))
 
