@@ -2,7 +2,8 @@
   "Support for the NHS Postcode directory (NHSPD)."
   (:require [com.eldrix.nhspd.download :as dl]
             [com.eldrix.nhspd.search :as search]
-            [clojure.core.async :as a])
+            [clojure.core.async :as a]
+            [next.jdbc :as jdbc])
   (:import (org.apache.lucene.search IndexSearcher)
            (java.io Closeable)
            (java.time.format DateTimeFormatter)))
@@ -61,6 +62,45 @@
   (write-index "/var/tmp/nhspd-nov-2020--2" "/Users/mark/Downloads/nhspd-nov-2020.zip")
   (with-open [nhspd (open-index "/var/tmp/nhspd-nov-2020--2")]
     (fetch-postcode nhspd "CF14 4XW")))
+
+(defn postcode->data
+  [{:strs [PCD2 PCDS OSNRTH1M OSEAST1M] :as pc}]
+  (vector PCD2 PCDS OSNRTH1M OSEAST1M (taoensso.nippy/fast-freeze pc)))
+
+["PCD2" "PCDS" "DOINTR" "DOTERM" "OSEAST100M"
+ "OSNRTH100M" "OSCTY" "ODSLAUA" "OSLAUA" "OSWARD"
+ "USERTYPE" "OSGRDIND" "CTRY" "OSHLTHAU" "RGN"
+ "OLDHA" "NHSER" "CCG" "PSED" "CENED"
+ "EDIND" "WARD98" "OA01" "NHSRLO" "HRO"
+ "LSOA01" "UR01IND" "MSOA01" "CANNET" "SCN"
+ "OSHAPREV" "OLDPCT" "OLDHRO" "PCON" "CANREG"
+ "PCT" "OSEAST1M" "OSNRTH1M" "OA11" "LSOA11"
+ "MSOA11" "CALNCV" "STP"]
+
+(defn write-batch
+  [conn batch]
+  (jdbc/execute-batch! conn
+                       "insert into nhspd (pcd2, pcds, osnrth1m, oseast1m, data) values (?,?,?,?,?)"
+                       (map postcode->data batch) {}))
+
+(comment
+
+  (def ch (async/chan 1 (comp (map postcode->data) (partition-all 50))))
+  (require '[next.jdbc :as jdbc])
+  (require '[clojure.core.async :as async])
+  (def conn (jdbc/get-connection "jdbc:sqlite:nhspd.db"))
+  (async/thread (dl/stream-latest-release ch))
+  (def batch (async/<!! ch))
+  (let [{:strs [PCD2 PCDS OSNRTH1M OSEAST1M]} (first batch)]
+    {:PCD2 PCD2 :PCDS PCDS :n OSNRTH1M :s OSEAST1M})
+  (taoensso.nippy/fast-freeze (first batch))
+  (jdbc/execute-one! conn ["create table if not exists nhspd (pcds text, pcd2 text, osnrth1m integer, oseast1m integer, data blob)"])
+  (loop [batch (async/<!! ch)]
+    (when batch
+      (write-batch conn batch)
+      (recur (async/<!! ch)))))
+
+
 
 
 
