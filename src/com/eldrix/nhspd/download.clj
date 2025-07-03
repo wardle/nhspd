@@ -2,9 +2,9 @@
   (:require [clojure.core.async :as a]
             [clojure.edn :as edn]
             [clojure.java.io :as io]
-            [org.httpkit.client :as http]
             [com.eldrix.nhspd.parse :as parse]
-            [clojure.tools.logging :as log])
+            [clojure.tools.logging :as log]
+            [hato.client :as hc])
   (:import (java.io File)
            (java.time LocalDate)
            (java.util.zip ZipFile)))
@@ -17,7 +17,7 @@
   If no `out` specified, a temporary file will be created and returned."
   ([url] (download-url url (File/createTempFile "nhspd" ".zip")))
   ([url out]
-   (io/copy (:body @(http/get url {:as :stream})) out)
+   (io/copy (:body (hc/get url {:as :stream :http-client {:redirect-policy :always}})) out)
    out))
 
 (defn get-latest-release
