@@ -10,7 +10,7 @@ The NHSPD is published by the Office of National Statistics in the UK.
 
 ## Getting started
 
-You will need to [install clojure](https://clojure.org/guides/getting_started), if you don't already have it installed.
+You will need to [install Clojure](https://clojure.org/guides/getting_started), if you don't already have it installed.
 
 For example, on Mac OS X:
 
