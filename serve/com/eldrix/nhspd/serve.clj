@@ -1,6 +1,6 @@
 (ns com.eldrix.nhspd.serve
-  (:require [com.eldrix.nhspd.core :as nhspd]
-            [cheshire.core :as json]
+  (:require [com.eldrix.nhspd.api :as nhspd]
+            [clojure.data.json :as json]
             [clojure.tools.logging.readable :as log]
             [io.pedestal.http :as http]
             [io.pedestal.http.content-negotiation :as conneg]
@@ -31,7 +31,7 @@
   (case content-type
     "text/plain" body
     "application/edn" (pr-str body)
-    "application/json" (json/generate-string body)))
+    "application/json" (json/write-str body)))
 
 (defn coerce-to
   [response content-type]
@@ -101,11 +101,10 @@
 
 (defn -main [& args]
   (if-not (= 2 (count args))
-    (println "Incorrect parameter. Usage: clj -M:serve <index directory> <port>")
-    (let [svc (nhspd/open-index (first args))
+    (println "Incorrect parameter. Usage: clj -M:serve <index> <port>")
+    (let [svc (nhspd/open (first args))
           port (Integer/parseInt (second args))]
       (start-server svc port))))
-
 
 ;; For interactive development
 (defonce server (atom nil))
@@ -118,7 +117,7 @@
   (http/stop @server))
 
 (comment
-  (def nhspd (nhspd/open-index "/tmp/nhspd-2021-02"))
+  (def nhspd (nhspd/open "nhspd.db"))
   (nhspd/fetch-postcode nhspd "CF14 4XW")
   (start-dev nhspd 3000)
   (stop-dev))

@@ -1,15 +1,17 @@
-(ns com.eldrix.nhspd.parse
-  "Provides functionality to parse 'NHS Postcode Data'."
-  (:require [clojure.java.io :as io]
-            [clojure.data.csv :as csv]
-            [clojure.core.async :as async]
-            [clojure.string :as str]
-            [next.jdbc :as jdbc])
-  (:import (java.io InputStreamReader)))
+(ns com.eldrix.nhspd.impl.model
+  (:require [clojure.set :as set]
+            [clojure.spec.alpha :as s]))
+
+(s/def ::name keyword?)
+(s/def ::description string?)
+(s/def ::type #{:integer :string})
+(s/def ::field (s/keys :req-un [::name]
+                       :opt-un [::description ::type ::pk ::nocase ::index]))
+(s/def ::fields (s/coll-of ::field))
 
 (def nhspd-fields
   "See the NHSPD user guide and the NHSPD record specification."
-  [{:name :PCD2, :description "Unit postcode – 8 character version"}
+  [{:name :PCD2, :description "Unit postcode – 8 character version" :pk true :nocase true :index true}
    {:name :PCDS, :description "Unit postcode -variable length (e-Gif) version"}
    {:name :DOINTR, :description "Date of introduction"}
    {:name :DOTERM, :description "Date of termination"}
@@ -20,7 +22,7 @@
    {:name :OSLAUA, :description "Local authority\ndistrict\n(LAD)/unitary\nauthority (UA)/\nmetropolitan\ndistrict (MD)/\nLondon borough\n(LB)/ council area\n(CA)/district\ncouncil area\n(DCA)"}
    {:name :OSWARD, :description "(Electoral)\nward/division"}
    {:name :USERTYPE, :type :integer, :description "Postcode user type"}
-   {:name :OSGRDIND, :description "Grid reference\npositional quality\nindicator"}
+   {:name :OSGRDIND, :type :integer :description "Grid reference\npositional quality\nindicator"}
    {:name :CTRY, :description "Country"}
    {:name :OSHLTHAU, :description "Former Strategic\nHealth Authority\n(SHA)/ Local\nHealth Board\n(LHB)/ Health\nBoard (HB)/\nHealth Authority\n(HA)/ Health &\nSocial Care Board\n(HSCB)"}
    {:name :RGN, :description "Region"}
@@ -59,81 +61,93 @@
    {:name :LSOA21 :description "2021 Census\nLower Layer Super\nOutput Area\n(LSOA)/Super\nData Zone (SDZ)"}
    {:name :MSOA21, :description "2021 Census\nMiddle Layer\nSuper Output\nArea (MSOA)"}])
 
-(def nhspd-field-names
-  (mapv (comp name :name) nhspd-fields))
+(def nhspd-fields#
+  (map-indexed (fn [idx m] (assoc m :idx idx)) nhspd-fields))
 
-(def create-nhspd-sql
-  "Return a SQL statement to create the nhspd table."
-  (str "CREATE TABLE IF NOT EXISTS NHSPD ("
-       (str/join ","
-                 (map (fn [{nm :name t :type}]
-                        (str (name nm) " " (if t (name t) "text"))) nhspd-fields)) ")"))
+(def field->idx
+  "A map of field to index."
+  (reduce (fn [acc {:keys [idx name]}]
+            (assoc acc name idx))
+          {}
+          nhspd-fields#))
 
-(def insert-nhspd-sql
-  "Return a SQL statement to insert data into the nhspd table."
-  (str "INSERT INTO NHSPD (" (str/join "," nhspd-field-names) ") VALUES ("
-       (str/join "," (repeat (count nhspd-field-names) "?")) ")"))
+(def core-fields
+  #{:PCD2 :PCDS :USERTYPE :OSGRDIND :OSEAST1M :OSNRTH1M})
 
-(defn- ^:deprecated parse-coords
-  [{:strs [OSNRTH1M OSEAST1M OSNRTH100M OSEAST100M] :as pc}]
-  (-> pc
-      (assoc "OSNRTH1M" (when-not (str/blank? OSNRTH1M) (Integer/parseInt OSNRTH1M)))
-      (assoc "OSEAST1M" (when-not (str/blank? OSEAST1M) (Integer/parseInt OSEAST1M)))
-      (assoc "OSNRTH100M" (when-not (str/blank? OSNRTH100M) (Integer/parseInt OSNRTH100M)))
-      (assoc "OSEAST100M" (when-not (str/blank? OSEAST100M) (Integer/parseInt OSEAST100M)))))
+(def active-fields
+  "All fields except those 'withdrawn'"
+  #{:PCD2 :PCDS :DOINTR :DOTERM :OSEAST100M :OSNRTH100M :OSCTY :ODSLAUA :OSLAUA :OSWARD :USERTYPE :OSGRDIND :CTRY
+    :OSHLTHAU :RGN :OLDHA :NHSER :CCG :OA01 :NHSRLO :HRO :LSOA01 :CANNET :SCN :OSHAPREV :OLDPCT :OLDHRO :PCON :CANREG
+    :PCT :OSEAST1M :OSNRTH1M :OA11 :LSOA11 :MSOA11 :CALNCV :ICB :SMHPC_AED :SMHPC_AS :SMHPC_CT4 :OA21 :LSOA21 :MSOA21})
 
-(defn ^:deprecated import-postcodes
-  "Import postcodes to the channel specified.
-  Each item is returned formatted as a map with the NHSPD data.
-  Ordnance survey grid coordinates are parsed as integers, if present.
+(def current-fields
+  "All fields except those 'withdrawn' or historic."
+  #{:PCD2 :PCDS :DOINTR :DOTERM :OSEAST100M :OSNRTH100M :OSCTY :ODSLAUA :OSLAUA :OSWARD :USERTYPE :OSGRDIND :CTRY
+    :RGN :NHSER :CCG :OA01 :NHSRLO :LSOA01 :SCN :PCON :CANREG :PCT :OSEAST1M :OSNRTH1M :OA11 :LSOA11 :MSOA11 :CALNCV :ICB :SMHPC_AED :SMHPC_AS :SMHPC_CT4 :OA21 :LSOA21 :MSOA21})
+
+(def all-fields
+  (mapv :name nhspd-fields))
+
+(def profiles
+  "Vectors of fields by profiles"
+  {:core    (filterv core-fields all-fields)
+   :active  (filterv active-fields all-fields)
+   :current (filterv current-fields all-fields)
+   :all     all-fields})
+
+(defn custom-profile
+  "Return an ordered sequence of fields with a custom set of 'cols'. This will
+  ALWAYS return the core set of fields which are the minimum for operation of
+  this library."
+  [cols]
+  (when (seq cols)
+    (filterv (clojure.set/union core-fields (set cols)) all-fields)))
+
+(defn mget
+  "Like [[clojure.core/get]] except works for multiple keys returning a vector."
+  [v ks]
+  (loop [ks ks, ret (transient [])]
+    (if-not (seq ks)
+      (persistent! ret)
+      (recur (rest ks) (conj! ret (get v (first ks)))))))
+
+;;
+;;
+;;
+
+(s/def ::profile #{:core :active :current :all})
+(s/def ::cols (s/every (set all-fields)))
+(s/def ::params (s/nilable (s/keys :opt-un [::profile ::cols])))
+
+(s/fdef nhspd
+  :args (s/cat :params ::params))
+
+(defn nhspd
+  "Return a map of :headings and :parse representing the NHSPD data model. As
+  the NHSPD model has changed over the years, different columns have been
+  deprecated. It would therefore be unusual to need to 'store' all data and it
+  is usually better to use one of the predefined 'profiles'.
+
   Parameters:
-    - in     : An argument that can be coerced into an input stream (see io/input-stream)
-    - ch     : The channel to use
-    - close? : If the channel should be closed when done."
-  ([in ch] (import-postcodes in ch true))
-  ([in ch close?]
-   (with-open [is (io/input-stream in)]
-     (->> is
-          (InputStreamReader.)
-          (csv/read-csv)
-          (map #(zipmap nhspd-field-names %))
-          (map parse-coords)
-          (run! #(async/>!! ch %))))
-   (when close? (async/close! ch))))
+  - :cols    : vector of columns to be 'selected'.
+  - :profile : one of :core, :active, :current, :all (default, :current).
 
-(defn stream-postcodes
-  "Blocking; stream postcode data to the channel specified as a vector of 
-  fields. It would be usual to run this in a background thread such as by 
-  using `async/thread`.
-  Parameters:
-    - in     : An argument that can be coerced into an input stream (see io/input-stream)
-    - ch     : The channel to use
-    - close? : If the channel should be closed when done."
-  ([in ch]
-   (stream-postcodes in ch true))
-  ([in ch close?]
-   (with-open [is (io/input-stream in)]
-     (async/<!! (async/onto-chan!! ch (->> is (InputStreamReader.) (csv/read-csv)))))
-   (when close? (async/close! ch))))
-
-(defn write-nhspd
-  [conn f]
-  (with-open [is (io/input-stream f)]
-    (let [batches (->> is
-                       (InputStreamReader.)
-                       (csv/read-csv)
-                       (partition-all 500))]
-      (doseq [batch batches]
-        (jdbc/with-transaction [txn conn]
-          (jdbc/execute-batch! conn insert-nhspd-sql batch {}))))))
-
+  Returns
+  - :fields   : sequence of 'selected' fields (:name, :description, :type).
+  - :parse    : a function that will return a vector of selected headings from
+                NHSPD row data."
+  ([]
+   (nhspd {:profile :current}))
+  ([{:keys [cols profile] :or {profile :current}}]
+   (let [ks (or (custom-profile cols) (get profiles profile))
+         kset (set ks)]
+     (when (seq ks)
+       {:fields   (filterv (comp kset :name) nhspd-fields)
+        :parse    (fn [row] (mget row (mapv field->idx ks)))}))))
 
 (comment
-  ;; this is the Feb 2020 release file (928mb) already downloaded and unzipped.
-  (def nhspd "/Users/mark/Downloads/NHSPD_UK_FULL/Full File Package - ODS/Data/nhg24feb.csv")
-  (def ch (async/chan 1 (partition-all 500)))
-  (async/thread (stream-postcodes nhspd ch))
-  (async/<!! ch)
-  (def conn (jdbc/get-connection "jdbc:sqlite:nhspd2.db"))
-  (jdbc/execute! conn [create-nhspd-sql])
-  (write-nhspd conn nhspd))
+  (mapv :name nhspd-fields)
+  (nhspd {:profile :core})
+  (let [{:keys [headings parse]} (nhspd {:profile :core})]
+    (= headings
+       (parse (mapv :name nhspd-fields)))))
