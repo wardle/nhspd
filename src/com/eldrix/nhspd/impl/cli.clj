@@ -35,7 +35,7 @@
        ""])
     (str/join \newline)))
 
-(defn parse-localdate
+(defn parse-local-date
   [s]
   (when-not (str/blank? s)
     (try (LocalDate/parse s DateTimeFormatter/ISO_LOCAL_DATE)
@@ -60,7 +60,7 @@
                     :parse-fn parse-long
                     :validate [#(< 0 % 0x10000) "Must be a number between 0 and 65536"]]
    :release        [nil "--release RELEASE_DATE" "Label for release for manual import, format yyyy-MM-dd e.g. 2025-03-01"
-                    :parse-fn parse-localdate
+                    :parse-fn parse-local-date
                     :validate [some? "Must be a date of format yyyy-MM-dd e.g. 2025-03-01"]]
    :format         [nil "--format FORMAT" "Output format"
                     :parse-fn keyword

@@ -94,7 +94,7 @@
   (loop [files files]
     (if-let [f (first files)]
       (do
-        (log/info "processing:" f)
+        (log/debug "processing:" f)
         (stream-file f ch false)
         (recur (rest files)))
       (when close? (async/close! ch)))))

@@ -12,7 +12,8 @@
   (:import (java.io InputStreamReader)
            (java.time LocalDate LocalDateTime)
            (java.time.format DateTimeFormatter)
-           (java.util Locale)))
+           (java.util Locale)
+           (javax.sql DataSource)))
 
 (set! *warn-on-reflection* true)
 
@@ -107,6 +108,10 @@
                   (update :date_time parse-local-date-time)
                   (update :release_date parse-local-date))))))
 
+(defn count-postcodes
+  [conn]
+  (:COUNT (jdbc/execute-one! conn ["SELECT COUNT(*) AS COUNT FROM NHSPD"])))
+
 (defn model
   [config]
   (when-not (s/valid? ::model/params config)
@@ -159,21 +164,21 @@
   "Open SQLite database. See https://github.com/xerial/sqlite-jdbc/blob/master/USAGE.md
   for URL specification, but essentially dbname should be a path to the SQLite
   database file."
-  [dbname]
+  ^DataSource [dbname]
   (jdbc/get-datasource {:dbtype "sqlite" :dbname (str dbname)}))
 
 (defn create-db
   "Create a database file 'database-file'. Optionally imports data from 'ch' if
   provided; this occurs prior to indexing so is faster than if performed after
-  database creation.
+  database creation. Returns a DataSource.
   Parameters:
   - dbname  : JDBC 'dbname' - essentially path to sqlite file
-  - ch      : clojure.core.async channel with batches of postcode data
+  - ch      : clojure.core.async channel with batches of postcode data, can be nil
   - config  : optional configuration map:
                |- :release - :date and :url of release
                |- :cols    - sequence of NHSPD columns
                |- :profile - one of :core :active :current :all"
-  [dbname ch {:keys [release cols profile] :as config}]
+  ^DataSource [dbname ch {:keys [release _cols _profile] :as config}]
   (let [ds (open-db dbname)
         {:keys [parse create-tables create-indexes insert]} (model config)]
     (execute-stmts ds create-tables)
@@ -185,7 +190,8 @@
     (when ch (write-from-ch ds ch parse insert))
     (execute-stmts ds create-indexes)
     (execute-stmts ds ["pragma journal_mode = DELETE"])
-    (jdbc/execute-one! ds ["vacuum"])))
+    (jdbc/execute-one! ds ["vacuum"])
+    ds))
 
 (defn update-db
   "Update a database in-place from the clojure.core.async channel specified. "
@@ -196,7 +202,6 @@
       (insert-manifest ds release)
       (write-from-ch ds ch parse upsert delay))
     (jdbc/execute-one! ds ["vacuum"])))
-
 
 ;;
 ;;
@@ -222,8 +227,8 @@
   [conn s]
   (when (>= (count s) 2)
     (when-let [{:keys [OSNRTH1M OSEAST1M]}
-               (jdbc/execute-one! conn ["select avg(OSNRTH1M) as OSNRTH1M,
-                                         avg(OSEAST1M) as OSEAST1M
+               (jdbc/execute-one! conn
+                                  ["select avg(OSNRTH1M) as OSNRTH1M, avg(OSEAST1M) as OSEAST1M
                                          from NHSPD where PCD2 like ?" (str s "%")]
                                   {:builder-fn rs/as-unqualified-maps})]
       {:OSNRTH1M (some-> OSNRTH1M int)

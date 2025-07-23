@@ -10,8 +10,10 @@ services used by other organisations. They issue the NHSPD quarterly."
     [clojure.core.async :as async]
     [com.eldrix.nhspd.impl.coords :as coords]
     [com.eldrix.nhspd.impl.download :as dl]
+    [com.eldrix.nhspd.impl.model :as model]
     [com.eldrix.nhspd.impl.store :as store]
-    [com.eldrix.nhspd.postcode :as pc])
+    [com.eldrix.nhspd.postcode :as pc]
+    [next.jdbc :as jdbc])
   (:import (java.io Closeable)))
 
 (defrecord ^:private NHSPD [ds]
@@ -94,6 +96,18 @@ services used by other organisations. They issue the NHSPD quarterly."
   [svc s1 s2]
   (some-> (pc/distance-between (os-grid-reference svc s1) (os-grid-reference svc s2)) int))
 
+(defn status
+  "Return status information about the NHSPD service including manifests,
+  columns, and version information."
+  [svc]
+  (with-open [conn (jdbc/get-connection (.-ds svc))]
+    (let [cols (set (store/column-names conn))
+          columns (filterv #(cols (:name %)) model/nhspd-fields)]
+      {:n         (store/count-postcodes conn)
+       :manifests (store/manifests conn)
+       :columns   columns
+       :version   (store/user-version conn)})))
+
 ;;
 ;;
 ;;
@@ -117,7 +131,7 @@ services used by other organisations. They issue the NHSPD quarterly."
   (let [ch (async/chan 1 (partition-all 1000))
         release (when release {:date release})]
     (async/thread (dl/stream-files ch files true))
-      (store/update-db (.-ds svc) ch {:release release :delay delay})))
+    (store/update-db (.-ds svc) ch {:release release :delay delay})))
 
 ;;
 ;;
@@ -137,12 +151,12 @@ services used by other organisations. They issue the NHSPD quarterly."
      (dl/delete zipfile))))
 
 (defn create-from-files
-  "Create database 'f' by importing 'files'."
+  "Create database 'f' by importing 'files'. Returns created NHSPD 'service'."
   [f files {:keys [profile cols release]}]
   (let [ch (async/chan 1 (partition-all 1000))
         release (when release {:date release})]
     (async/thread (dl/stream-files ch files true))
-      (store/create-db f ch {:release release :profile profile :cols cols})))
+    (->NHSPD (store/create-db f ch {:release release :profile profile :cols cols}))))
 
 (comment
   (dl/latest-release)

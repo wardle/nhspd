@@ -2,6 +2,7 @@
 
 [![Scc Count Badge](https://sloc.xyz/github/wardle/nhspd)](https://github.com/wardle/nhspd/)
 [![Scc Cocomo Badge](https://sloc.xyz/github/wardle/nhspd?category=cocomo&avg-wage=100000)](https://github.com/wardle/nhspd/)
+[![Tests](https://github.com/wardle/nhspd/actions/workflows/test.yml/badge.svg)](https://github.com/wardle/nhspd/actions/workflows/test.yml)
 [![Clojars Project](https://img.shields.io/clojars/v/com.eldrix/nhspd.svg)](https://clojars.org/com.eldrix/nhspd)
 
 Support for the UK NHS Postcode Directory, linking all UK postcodes to health data.
@@ -10,64 +11,105 @@ The NHSPD is published by the Office of National Statistics in the UK.
 
 ## Getting started
 
-You will need to [install Clojure](https://clojure.org/guides/getting_started), if you don't already have it installed.
+You can use NHSPD in three ways:
+1. **As a command-line tool** - Download the prebuilt JAR or use Clojure
+2. **As a library** - Include in your Clojure project
+3. **As a SQLite index** - simply use your favourite programming language and SQLite bindings and directly use the index
 
-For example, on Mac OS X:
+### Option 1: Command-line tool
+
+**Using prebuilt JAR (recommended):**
+
+Download the latest release from [GitHub releases](https://github.com/wardle/nhspd/releases):
 
 ```shell
-brew install clojure/tools/clojure
+# Get help
+java -jar nhspd.jar --help
+
+# Create NHSPD database from latest release
+java -jar nhspd.jar create --db nhspd.db
+
+# Run web service
+java -jar nhspd.jar serve --db nhspd.db --port 8080
 ```
 
+**Using Clojure CLI:**
 
-1. Create the postcode index
-2. Run a web service
-3. Use as a library
-
-### 1. Create the postcode index
-
-To download and create a searchable index, run the following command:
+If you have [Clojure installed](https://clojure.org/guides/getting_started):
 
 ```shell
-clj -M:download 
+# Get help
+clj -M:run --help
+
+# Create NHSPD database from latest release
+clj -M:run create --db nhspd.db
+
+# Run web service  
+clj -M:run serve --db nhspd.db --port 8080
 ```
 
-This will download the latest NHSPD release and index it in a file-based directory
-in the current directory.
+**Using SQLite**
 
-Or: 
+Once you have created an index, you can simply use your programming language's 
+SQLite bindings (e.g. from Python) to make use of NHSPD data. You can continue
+to use the command line tools here to create new indexes, or update an existing
+index in place.
+
+#### Available Commands
+
+- **`create`** - Download latest NHSPD release and create SQLite database
+- **`update`** - Update existing database with latest release
+- **`import`** - Import specific NHSPD files
+- **`serve`** - Run HTTP web service
+- **`status`** - Show database information
+
+#### Creating the database
+
+To download and create a searchable SQLite database:
+
 ```shell
-clj -M:download /tmp/nhspd-2021-02
+# Creates nhspd.db with core columns (fastest)
+java -jar nhspd.jar create --db nhspd.db --profile core
+
+# Creates nhspd.db with all available columns (slower, larger)
+java -jar nhspd.jar create --db nhspd.db --profile all
 ```
 
-This will download the latest NHSPD release and create an index in the directory `/tmp/nhspd-2021-02`:
+The process takes 2-3 minutes depending on your connection and selected profile.
 
-The process of downloading and indexing takes 2-3 minutes on my laptop.
+### Running a web service
 
-### 2. Run a web service
-
-This code is designed to be used as a library in a larger server application. 
-
-However, if you wish, you can run a simple web service on any given port.
-Here we start using the index `/tmp/nhspd-2021-02` created above, publishing on port 8080.
+Start a REST API server:
 
 ```shell
-clj -M:serve /tmp/nhspd-2021-02 8080
+# Using JAR
+java -jar nhspd.jar serve --db nhspd.db --port 8080
+
+# Using Clojure CLI
+clj -M:run serve --db nhspd.db --port 8080
 ```
 
-Once running, a simple REST server will provide data on a UK postcode:
+#### HTTP API
+
+Once running, the REST server provides data on UK postcodes:
 
 ```shell
+# Basic postcode lookup
+http localhost:8080/v1/nhspd/CF144XW
+
+# Request JSON explicitly  
 http -j localhost:8080/v1/nhspd/CF144XW
 ```
 
-Entered postcodes will be normalized to the PCD2 standard. 
-This means the following are equivalent:
+Postcodes are automatically normalised to PCD2 standard, so these are all equivalent:
 
 ```shell
-http -j localhost:8080/v1/nhspd/CF14%204XW
-http -j localhost:8080/v1/nhspd/CF14%20%204xw
-http -j localhost:8080/v1/nhspd/cf144x%20w
+http localhost:8080/v1/nhspd/CF14%204XW
+http localhost:8080/v1/nhspd/CF14%20%204xw  
+http localhost:8080/v1/nhspd/cf144x%20w
 ```
+
+The API supports content negotiation - request `application/json`, `application/edn`, or `text/plain`.
 
 
 Result:
@@ -122,29 +164,49 @@ Result:
 If a postcode cannot be found, or an invalid postcode is entered, the server
 will respond with a 404 response ('not found').
 
-### 3. Use as a library
+### Option 2: Use as a library
 
-This is the main intended use of this code as part of my wider PatientCare electronic health and care record system.
-
-Include NHSPD in your deps.edn file (remember to use the latest SHA):
+**From Clojars (recommended):**
 
 ```clojure
-[com.eldrix.nhspd {:git/url "https://github.com/wardle/nhspd.git"
-                    :sha     "8de18b7038a9b4b8cbf6d829a128b8a71f19d978"}
+;; In deps.edn
+{:deps {com.eldrix/nhspd {:mvn/version "2.0.LATEST"}}}
 ```
 
-And then in your code:
+**From Git (development):**
 
 ```clojure
-(with-open [nhspd (open-index "/tmp/nhspd-2021-02")]
-    (let [pc1 (fetch-postcode nhspd "CF14 4XW")    ;; University Hospital of Wales
-          pc2 (fetch-postcode nhdpd "CF47 9DT")]   ;; Prince Charles Hospital
-        (postcode/distance-between pc1 pc2))
+;; In deps.edn
+{:deps {com.eldrix/nhspd {:git/url "https://github.com/wardle/nhspd.git"
+                          :sha     "LATEST_SHA"}}}
 ```
 
-`pc1` and `pc2` will contain the full NHSPD data for each postcode including
-mappings to different health and care data. In this example, we use those data to calculate
-a crude distance between those two postcodes.
+**Usage:**
 
-When used a library, the code to run as a web service is not included, by design.
+```clojure
+(require '[com.eldrix.nhspd.api :as nhspd])
+
+;; Open database
+(with-open [svc (nhspd/open "nhspd.db")]
+  ;; Look up postcodes
+  (let [pc1 (nhspd/postcode svc "CF14 4XW")    ;; University Hospital of Wales
+        pc2 (nhspd/postcode svc "CF47 9DT")]   ;; Prince Charles Hospital
+    
+    ;; Calculate distance between postcodes
+    (nhspd/distance-between svc "CF14 4XW" "CF47 9DT")
+    
+    ;; Get OS grid reference with WGS84 coordinates
+    (nhspd/with-wgs84 (nhspd/os-grid-reference svc "CF14 4XW"))))
+```
+
+**API Functions:**
+
+- `(nhspd/open "path/to/nhspd.db")` - Open database connection
+- `(nhspd/close svc)` - Close opened service
+- `(nhspd/postcode svc "CF14 4XW")` - Get postcode data (keyword keys)
+- `(nhspd/fetch-postcode svc "CF14 4XW")` - Get postcode data (string keys)
+- `(nhspd/distance-between svc "PC1" "PC2")` - Calculate distance in metres
+- `(nhspd/os-grid-reference svc "CF14 4XW")` - Get OS grid coordinates
+- `(nhspd/with-wgs84 coords)` - Convert to WGS84 latitude/longitude
+- `(nhspd/status svc)` - Get database statistics
 

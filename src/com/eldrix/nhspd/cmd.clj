@@ -7,14 +7,12 @@
     [clojure.string :as str]
     [com.eldrix.nhspd.api :as nhspd]
     [com.eldrix.nhspd.impl.cli :as cli]
-    [com.eldrix.nhspd.impl.model :as model]
-    [com.eldrix.nhspd.impl.serve :as serve]
-    [com.eldrix.nhspd.impl.store :as store])
+    [com.eldrix.nhspd.impl.serve :as serve])
   (:import (java.time LocalDate LocalDateTime)
            (java.time.format DateTimeFormatter)))
 
 (defn serve
-  [{:keys [db port bind allowed-origin] :as opts} args]
+  [{:keys [db port bind allowed-origin] :as opts} _args]
   (let [svc (nhspd/open db)
         allowed-all (contains? (set allowed-origin) "*")]
     (println "Running HTTP server " opts)
@@ -45,8 +43,10 @@
       (str (subs s 0 (- n 3)) "...")
       s)))
 
-(defn status-text [{:keys [manifests columns version]}]
-  (println "\n\nNHSPD schema version: " version)
+(defn status-text [{:keys [n manifests columns version]}]
+  (println "\n\n")
+  (println "NHSPD schema version : " version)
+  (println "Number of postcodes  :" n)
   (println "\nMANIFESTS:")
   (pp/print-table manifests)
   (println "\n\nNHSPD COLUMNS (FIELDS):")
@@ -54,21 +54,18 @@
                   (map (fn [col] (update col :description #(truncate % 70))) columns)))
 
 (defn status
-  [{:keys [db format] :or {format :text}} args]
+  [{:keys [db format] :or {format :text}} _args]
   (if (.exists (io/file db))
-    (let [ds (store/open-db db)
-          cols (set (store/column-names ds))
-          manifests (store/manifests ds)
-          columns (filterv #(cols (:name %)) model/nhspd-fields)
-          data {:manifests manifests :columns columns :version (store/user-version ds)}]
-      (case format
-        :text (status-text data)
-        :edn (prn data)
-        :json (json/write data *out*)))
+    (with-open [svc (nhspd/open db)]
+      (let [data (nhspd/status svc)]
+        (case format
+          :text (status-text data)
+          :edn (prn data)
+          :json (json/write data *out*))))
     (println "ERROR: index file not found:" db)))
 
 (defn create-db
-  [{:keys [db profile column]} args]
+  [{:keys [db profile column]} _args]
   (if (.exists (io/file db))
     (println "ERROR: index file already exists:" db)
     (do
@@ -76,7 +73,7 @@
       (nhspd/create-latest db {:profile profile :cols column}))))
 
 (defn update-db
-  [{:keys [db delay]} args]
+  [{:keys [db delay]} _args]
   (if-not (.exists (io/file db))
     (println "ERROR: existing index file not found:" db)
     (let [svc (nhspd/open db)]

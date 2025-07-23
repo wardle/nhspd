@@ -1,12 +1,15 @@
 (ns build
   (:require [clojure.tools.build.api :as b]
-            [deps-deploy.deps-deploy :as dd]))
+            [deps-deploy.deps-deploy :as dd]
+            [borkdude.gh-release-artifact :as gh]))
 
 (def lib 'com.eldrix/nhspd)
-(def version (format "1.1.%s" (b/git-count-revs nil)))
+(def version (format "2.0.%s" (b/git-count-revs nil)))
 (def class-dir "target/classes")
 (def basis (b/create-basis {:project "deps.edn"}))
-(def jar-file (format "target/%s-%s.jar" (name lib) version))
+(def uber-basis (b/create-basis {:project "deps.edn" :aliases [:run]}))
+(def jar-file (format "target/%s-%s-lib.jar" (name lib) version))
+(def uber-file (format "target/%s-%s.jar" (name lib) version))
 
 (defn clean [_]
   (b/delete {:path "target"}))
@@ -52,3 +55,30 @@
               :artifact  jar-file
               :pom-file  (b/pom-path {:lib       lib
                                       :class-dir class-dir})}))
+
+(defn uber
+  "Create an executable uberjar file."
+  [_]
+  (clean nil)
+  (println "Building uberjar" lib version)
+  (b/copy-dir {:src-dirs   ["src" "resources"]
+               :target-dir class-dir})
+  (b/compile-clj {:basis     uber-basis
+                  :src-dirs  ["src"]
+                  :class-dir class-dir})
+  (b/uber {:class-dir class-dir
+           :uber-file uber-file
+           :basis     uber-basis
+           :main      'com.eldrix.nhspd.cmd}))
+
+(defn release
+      "Deploy release to GitHub. Requires valid token in GITHUB_TOKEN environmental
+       variable."
+      [_]
+      (uber nil)
+      (println "Deploying release to GitHub")
+      (gh/release-artifact {:org    "wardle"
+                            :repo   "nhspd"
+                            :tag    (str "v" version)
+                            :file   uber-file
+                            :sha256 true}))

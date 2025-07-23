@@ -90,8 +90,6 @@
   "An ordered sequence of all fields."
   (mapv :name nhspd-fields))
 
-
-
 (def profiles
   "Vectors of fields by profiles"
   {:core    (filterv core-fields all-fields)
