@@ -1,9 +1,11 @@
+.DS_Store
 pom.xml
 pom.xml.asc
 *.jar
 *.iml
 *.class
 *.db
+/*.csv
 /lib/
 /classes/
 /target/
