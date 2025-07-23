@@ -18,7 +18,7 @@
   "Create a library jar file."
   [_]
   (clean nil)
-  (println "Building" lib version)
+  (println "Building" jar-file)
   (b/write-pom {:class-dir class-dir
                 :lib       lib
                 :version   version
@@ -73,7 +73,7 @@
   "Create an executable uberjar file."
   [_]
   (clean nil)
-  (println "Building uberjar" lib version)
+  (println "Building uberjar" uber-file)
   (b/copy-dir {:src-dirs   ["src" "resources"]
                :target-dir class-dir})
   (b/compile-clj {:basis     uber-basis
