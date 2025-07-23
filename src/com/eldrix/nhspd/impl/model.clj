@@ -1,6 +1,7 @@
 (ns com.eldrix.nhspd.impl.model
-  (:require [clojure.set :as set]
-            [clojure.spec.alpha :as s]))
+  (:require
+    [clojure.set :as set]
+    [clojure.spec.alpha :as s]))
 
 (s/def ::name keyword?)
 (s/def ::description string?)
@@ -19,47 +20,47 @@
    {:name :OSNRTH100M, :type :integer, :description "National grid reference - Northing"}
    {:name :OSCTY, :description "County"}
    {:name :ODSLAUA, :description "Local Authority Organisation"}
-   {:name :OSLAUA, :description "Local authority\ndistrict\n(LAD)/unitary\nauthority (UA)/\nmetropolitan\ndistrict (MD)/\nLondon borough\n(LB)/ council area\n(CA)/district\ncouncil area\n(DCA)"}
-   {:name :OSWARD, :description "(Electoral)\nward/division"}
+   {:name :OSLAUA, :description "Local authority district (LAD) / unitary authority (UA) / metropolitan district (MD) / London borough (LB) / council area(CA) / district council area (DCA)"}
+   {:name :OSWARD, :description "(Electoral) ward / division"}
    {:name :USERTYPE, :type :integer, :description "Postcode user type"}
-   {:name :OSGRDIND, :type :integer :description "Grid reference\npositional quality\nindicator"}
+   {:name :OSGRDIND, :type :integer :description "Grid reference positional quality indicator"}
    {:name :CTRY, :description "Country"}
-   {:name :OSHLTHAU, :description "Former Strategic\nHealth Authority\n(SHA)/ Local\nHealth Board\n(LHB)/ Health\nBoard (HB)/\nHealth Authority\n(HA)/ Health &\nSocial Care Board\n(HSCB)"}
+   {:name :OSHLTHAU, :description "Former Strategic Health Authority (SHA)/ Local Health Board (LHB)/ Health Board (HB)/ Health Authority (HA)/ Health & Social Care Board (HSCB)"}
    {:name :RGN, :description "Region"}
-   {:name :OLDHA, :description "Pre-2002 Health\nAuthority"}
-   {:name :NHSER, :description "NHS England\n(Region) (NHSER)"}
-   {:name :CCG, :description "Sub ICB Location\n(LOC)/ Local\nHealth Board\n(LHB)/\nCommunity\nHealth\nPartnership\n(CHP)/ Local\nCommissioning\nGroup (LCG)/\nPrimary\nHealthcare\nDirectorate (PHD)"}
+   {:name :OLDHA, :description "Pre-2002 Health Authority"}
+   {:name :NHSER, :description "NHS England (Region) (NHSER)"}
+   {:name :CCG, :description "Sub ICB Location (LOC)/ Local Health Board (LHB)/ Community Health Partnership (CHP)/ Local Commissioning Group (LCG)/ Primary Healthcare Directorate (PHD)"}
    {:name :PSED, :description "Content removed"}
    {:name :CENED, :description "Content removed"}
    {:name :EDIND, :description "Content removed"}
    {:name :WARD98, :description "Content removed"}
-   {:name :OA01, :description "2001 Census\nOutput Area (OA)"}
-   {:name :NHSRLO, :description "NHS England\n(Region, Local\nOffice) (NHSRLO)"}
+   {:name :OA01, :description "2001 Census Output Area (OA)"}
+   {:name :NHSRLO, :description "NHS England (Region, Local Office) (NHSRLO)"}
    {:name :HRO, :description "Former Pan SHA"}
-   {:name :LSOA01, :description "2001 Lower Layer\nSuper Output\nArea (LSOA)/\nSuper Output\nArea (SOA)/ Data\nZone (DZ)"}
+   {:name :LSOA01, :description "2001 Lower Layer Super Output Area (LSOA)/ Super Output Area (SOA)/ Data Zone (DZ)"}
    {:name :UR01IND, :description "Content removed"}
    {:name :MSOA01, :description "Content removed"}
-   {:name :CANNET, :description "Former Cancer\nNetwork"}
-   {:name :SCN, :description "Strategic Clinical\nNetwork (NHS\nSCN)"}
-   {:name :OSHAPREV, :description "‘First wave’\nStrategic Health\nAuthority (SHA)/\nHealth Board\n(HB)/ Health\nAuthority (HA)/\nHealth & Social\nServices Board\n(HSSB)"}
-   {:name :OLDPCT, :description "‘First wave’\nPrimary Care Trust\n(PCT)/ Local\nHealth Board\n(LHB)/ Care Trust\n(CT)"}
-   {:name :OLDHRO, :description "‘Old’ IT Cluster\n(ITC)"}
-   {:name :PCON, :description "Westminster\nparliamentary\nconstituency"}
+   {:name :CANNET, :description "Former Cancer Network"}
+   {:name :SCN, :description "Strategic Clinical Network (NHS SCN)"}
+   {:name :OSHAPREV, :description "‘First wave’ Strategic Health Authority (SHA)/ Health Board (HB)/ Health Authority (HA)/ Health & Social Services Board (HSSB)"}
+   {:name :OLDPCT, :description "‘First wave’ Primary Care Trust (PCT)/ Local Health Board (LHB)/ Care Trust (CT)"}
+   {:name :OLDHRO, :description "‘Old’ IT Cluster (ITC)"}
+   {:name :PCON, :description "Westminster parliamentary constituency"}
    {:name :CANREG, :description "Cancer registry"}
-   {:name :PCT, :description "‘Second wave’\nPrimary Care Trust\n(PCT)/ Care Trust/\nCare Trust Plus\n(CT)/ Local Health\nBoard (LHB)/\nCommunity\nHealth\nPartnership\n(CHP)/ Local\nCommissioning\nGroup (LCG)/\nPrimary\nHealthcare\nDirectorate (PHD)"}
-   {:name :OSEAST1M, :type :integer, :description "National grid\nreference -\nEasting"}
-   {:name :OSNRTH1M, :type :integer, :description "National grid\nreference -\nNorthing"}
-   {:name :OA11, :description "2011 Census\nOutput Area (OA)/\nSmall Area (SA)"}
-   {:name :LSOA11, :description "2011 Census\nLower Layer Super\nOutput Area\n(LSOA)/ Super\nOutput Area\n(SOA)/ Data Zone\n(DZ)"}
-   {:name :MSOA11, :description "2011 Census\nMiddle Layer\nSuper Output\nArea (MSOA)/\nIntermediate\nZone (IZ)"}
-   {:name :CALNCV, :description "Cancer Alliance\n(CAL)"}
-   {:name :ICB, :description "Integrated Care\nBoard (ICB)"}
-   {:name :SMHPC_AED, :description "SMHPC (Adult\nEating Disorder\nservices)"}
-   {:name :SMHPC_AS, :description "SMHPC (Adult\nLow and Medium\nSecure services)"}
-   {:name :SMHPC_CT4, :description "SMHPC (Child and\nYoung Persons\nMental Health\nServices)"}
-   {:name :OA21, :description "2021 Census\nOutput Area (OA)/\nData Zone (DZ)"}
-   {:name :LSOA21 :description "2021 Census\nLower Layer Super\nOutput Area\n(LSOA)/Super\nData Zone (SDZ)"}
-   {:name :MSOA21, :description "2021 Census\nMiddle Layer\nSuper Output\nArea (MSOA)"}])
+   {:name :PCT, :description "‘Second wave’ Primary Care Trust (PCT)/ Care Trust/ Care Trust Plus (CT)/ Local Health Board (LHB)/ Community Health Partnership (CHP)/ Local Commissioning Group (LCG)/ Primary Healthcare Directorate (PHD)"}
+   {:name :OSEAST1M, :type :integer, :description "National grid reference - Easting"}
+   {:name :OSNRTH1M, :type :integer, :description "National grid reference - Northing"}
+   {:name :OA11, :description "2011 Census Output Area (OA)/ Small Area (SA)"}
+   {:name :LSOA11, :description "2011 Census Lower Layer Super Output Area (LSOA)/ Super Output Area (SOA)/ Data Zone (DZ)"}
+   {:name :MSOA11, :description "2011 Census Middle Layer Super Output Area (MSOA)/ Intermediate Zone (IZ)"}
+   {:name :CALNCV, :description "Cancer Alliance (CAL)"}
+   {:name :ICB, :description "Integrated Care Board (ICB)"}
+   {:name :SMHPC_AED, :description "SMHPC (Adult Eating Disorder services)"}
+   {:name :SMHPC_AS, :description "SMHPC (Adult Low and Medium Secure services)"}
+   {:name :SMHPC_CT4, :description "SMHPC (Child and Young Persons Mental Health Services)"}
+   {:name :OA21, :description "2021 Census Output Area (OA)/ Data Zone (DZ)"}
+   {:name :LSOA21 :description "2021 Census Lower Layer Super Output Area (LSOA)/Super Data Zone (SDZ)"}
+   {:name :MSOA21, :description "2021 Census Middle Layer Super Output Area (MSOA)"}])
 
 (def nhspd-fields#
   (map-indexed (fn [idx m] (assoc m :idx idx)) nhspd-fields))
@@ -86,7 +87,10 @@
     :RGN :NHSER :CCG :OA01 :NHSRLO :LSOA01 :SCN :PCON :CANREG :PCT :OSEAST1M :OSNRTH1M :OA11 :LSOA11 :MSOA11 :CALNCV :ICB :SMHPC_AED :SMHPC_AS :SMHPC_CT4 :OA21 :LSOA21 :MSOA21})
 
 (def all-fields
+  "An ordered sequence of all fields."
   (mapv :name nhspd-fields))
+
+
 
 (def profiles
   "Vectors of fields by profiles"
@@ -101,7 +105,7 @@
   this library."
   [cols]
   (when (seq cols)
-    (filterv (clojure.set/union core-fields (set cols)) all-fields)))
+    (filterv (set/union core-fields (set cols)) all-fields)))
 
 (defn mget
   "Like [[clojure.core/get]] except works for multiple keys returning a vector."
@@ -115,8 +119,9 @@
 ;;
 ;;
 
-(s/def ::profile #{:core :active :current :all})
-(s/def ::cols (s/every (set all-fields)))
+(s/def ::profile (s/nilable #{:core :active :current :all}))
+(s/def ::col (set all-fields))
+(s/def ::cols (s/nilable (s/coll-of ::col)))
 (s/def ::params (s/nilable (s/keys :opt-un [::profile ::cols])))
 
 (s/fdef nhspd
@@ -138,12 +143,12 @@
                 NHSPD row data."
   ([]
    (nhspd {:profile :current}))
-  ([{:keys [cols profile] :or {profile :current}}]
-   (let [ks (or (custom-profile cols) (get profiles profile))
+  ([{:keys [cols profile]}]
+   (let [ks (or (custom-profile cols) (get profiles (or profile :current)))
          kset (set ks)]
      (when (seq ks)
-       {:fields   (filterv (comp kset :name) nhspd-fields)
-        :parse    (fn [row] (mget row (mapv field->idx ks)))}))))
+       {:fields (filterv (comp kset :name) nhspd-fields)
+        :parse  (fn [row] (mget row (mapv field->idx ks)))}))))
 
 (comment
   (mapv :name nhspd-fields)

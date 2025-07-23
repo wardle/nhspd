@@ -5,7 +5,7 @@ It also links postcodes to pre-2002 health areas, 1991 Census enumeration distri
 Wales) and both 2001 Census and 2011 Census Output Areas and Super Output Areas. It helps support
 the production of area-based statistics from postcoded data. The NHSPD is produced by ONS
 Geography, who provide geographic support to the Office for National Statistics (ONS) and geographic
-services used by other organisations. They issue the NHSPD quarterly. "
+services used by other organisations. They issue the NHSPD quarterly."
   (:require
     [clojure.core.async :as async]
     [com.eldrix.nhspd.impl.coords :as coords]
@@ -28,14 +28,25 @@ services used by other organisations. They issue the NHSPD quarterly. "
 
 (defn postcode
   "Return NHSPD data for the given postcode. Returns data as map of keyword keys
-  to values."
+  to values.
+  For example,
+  ```
+  (nhspd/postcode nhspd \"CF14 4XW\")
+  =>
+  {:PCD2 \"CF14 4XW\", :PCDS \"CF14 4XW\", :USERTYPE 0, :OSGRDIND 1, :OSEAST1M 317518, :OSNRTH1M 179363}\n
+  ```"
   [svc s]
   (store/postcode (.-ds svc) s))
 
-(defn ^:deprecated fetch-postcode
-  "DEPRECATED: use [[postcode]] instead. Returns NHSPD data for given postcode
-  with result as map, but unlike [[postcode]], returns data with *string* keys.
-  This is only for backwards compatibility with older versions of the library."
+(defn fetch-postcode
+  "Returns NHSPD data for given postcode with result as map, but unlike
+  [[postcode]], returns data with *string* keys.
+  For example,
+  ```
+  (nhspd/fetch-postcode nhspd \"CF14 4XW\")
+  =>
+  {\"PCD2\" \"CF14 4XW\", \"PCDS\" \"CF14 4XW\", \"USERTYPE\" 0, \"OSGRDIND\" 1, \"OSEAST1M\" 317518, \"OSNRTH1M\" 179363}
+  ```"
   [svc s]
   (store/fetch-postcode (.-ds svc) s))
 
@@ -44,20 +55,36 @@ services used by other organisations. They issue the NHSPD quarterly. "
   Parameters:
   - s : either a full postcode, or prefix.
   For a prefix, the average location of all postcodes with that prefix will be
-  returned."
+  returned.
+  For example,
+  ```
+  (nhspd/os-grid-reference nhspd \"CF14 4XW\")
+  =>
+  {:OSNRTH1M 179363, :OSEAST1M 317518}
+
+  (nhspd/os-grid-reference nhspd \"CF14\")
+  =>
+  {:OSNRTH1M 180611, :OSEAST1M 316282}
+  ```"
   [svc s]
   (store/os-grid-reference (.-ds svc) s))
 
 (defn with-wgs84
   "Add :WGS84LAT and :WGS84LNG to the NHSPD data based on the Ordnance Survey
-  easting/northing coordinates."
+  easting/northing coordinates.
+  For example,
+  ```
+  (nhspd/with-wgs84 (nhspd/os-grid-reference nhspd \"CF14\"))
+  =>
+  {:OSNRTH1M 180611, :OSEAST1M 316282, :WGS84LAT 52.73734104485671, :WGS84LNG -3.240100747759483}\n
+  ```"
   [pc]
   (coords/with-wgs84 pc))
 
 (defn distance-between
   "Return the distance in metres between two UK postal codes. This works for
   full postcodes and prefixes.
-  For example
+  For example,
   ```
   (distance-between svc \"CF14 2HB\" \"CF14 4XW\")
   => 3188
@@ -72,24 +99,25 @@ services used by other organisations. They issue the NHSPD quarterly. "
 ;;
 
 (defn update-from-latest
-  "Update service  with the latest NHSPD release."
-  [svc]
-  (let [{:keys [url] :as release} (dl/latest-release)
-        dist (dl/download-url url)
-        ch (async/chan 1 (partition-all 1000))]
-    (async/thread
-      (dl/stream-zip dist ch true))
-    (store/update-db (.-ds svc) ch release)))
-
-(defn update-from-csv
-  "Update service from a specified csv file. "
-  ([svc csv-file]
-   (update-from-csv svc csv-file nil))
-  ([svc csv-file release]
-   (let [ch (async/chan 1 (partition-all 1000))]
+  "Update service with the latest NHSPD release."
+  ([svc]
+   (update-from-latest svc {}))
+  ([svc {:keys [delay]}]
+   (let [{:keys [url] :as release} (dl/latest-release)
+         zipfile (dl/download-url url)
+         ch (async/chan 1 (partition-all 1000))]
      (async/thread
-       (dl/stream-csv csv-file ch))
-     (store/update-db (.-ds svc) ch release))))
+       (dl/stream-zip zipfile ch true))
+     (store/update-db (.-ds svc) ch {:release release :delay delay})
+     (dl/delete zipfile))))
+
+(defn update-from-files
+  "Import 'files' into existing service."
+  [svc files {:keys [release delay]}]
+  (let [ch (async/chan 1 (partition-all 1000))
+        release (when release {:date release})]
+    (async/thread (dl/stream-files ch files true))
+      (store/update-db (.-ds svc) ch {:release release :delay delay})))
 
 ;;
 ;;
@@ -101,19 +129,21 @@ services used by other organisations. They issue the NHSPD quarterly. "
    (create-latest f nil))
   ([f config]
    (let [{:keys [url] :as release} (dl/latest-release)
-         dist (dl/download-url url)
+         zipfile (dl/download-url url)
          ch (async/chan 1 (partition-all 1000))]
      (async/thread
-       (dl/stream-zip dist ch true))
-     (store/create-db f ch release config))))
+       (dl/stream-zip zipfile ch true))
+     (store/create-db f ch (assoc config :release release))
+     (dl/delete zipfile))))
 
-(defn create-from-csv
-  [f csv-file release config]
-  (let [ch (async/chan 1 (partition-all 1000))]
-    (async/thread
-      (dl/stream-csv csv-file ch true))
-    (store/create-db f ch release config)))
+(defn create-from-files
+  "Create database 'f' by importing 'files'."
+  [f files {:keys [profile cols release]}]
+  (let [ch (async/chan 1 (partition-all 1000))
+        release (when release {:date release})]
+    (async/thread (dl/stream-files ch files true))
+      (store/create-db f ch {:release release :profile profile :cols cols})))
 
 (comment
   (dl/latest-release)
-  (create-from-csv "nhspd.db" "nhg25may.csv" (dl/latest-release) {:profile :core}))
+  (create-from-files "nhspd.db" ["nhg25may.csv"] {:release (dl/latest-release), :profile :core}))

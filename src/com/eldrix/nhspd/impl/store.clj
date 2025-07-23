@@ -14,6 +14,8 @@
            (java.time.format DateTimeFormatter)
            (java.util Locale)))
 
+(set! *warn-on-reflection* true)
+
 (s/def ::fields ::model/fields)
 
 (def version 1)
@@ -35,7 +37,7 @@
 (defn create-tables-sql
   "Return SQL statements to create the nhspd tables."
   [fields]
-  ["CREATE TABLE IF NOT EXISTS MANIFEST (id integer primary key, date_time integer not null, release_date integer not null, url text, finished_date_time integer)"
+  ["CREATE TABLE IF NOT EXISTS MANIFEST (id integer primary key, date_time integer not null, release_date integer not null, url text)"
    (str "CREATE TABLE IF NOT EXISTS NHSPD ("
         (str/join ","
                   (map (fn [{nm :name t :type pk :pk nocase :nocase}]
@@ -75,22 +77,14 @@
                  (str "drop index " n#))))))
 
 (defn insert-manifest
-  "Records a new row into the store manifest and returns a function that will
-  mark the manifest as completed. NOP if 'release' is nil."
+  "Records a new row into the store manifest. NOP if 'release' is nil."
   [conn {:keys [date url] :as release}]
-  (if (and release date url)                                ;; only add manifest entry if we have a release
-    (let [manifest-id
-          (:id
-            (jdbc/execute-one!
-              conn
-              ["insert into manifest (date_time, release_date, url) values (unixepoch(?),unixepoch(?),?) returning id"
-               (LocalDateTime/now) date url]
-              {:builder-fn rs/as-unqualified-maps}))]
-      (fn []
-        (jdbc/execute-one!
-          conn
-          ["update manifest set finished_date_time=unixepoch(?) where id=?" (LocalDateTime/now) manifest-id])))
-    (fn [])))
+  (when release
+    (jdbc/execute-one!
+      conn
+      ["insert into manifest (date_time, release_date, url) values (unixepoch(?),unixepoch(?),?) returning id"
+       (LocalDateTime/now) date url]
+      {:builder-fn rs/as-unqualified-maps})))
 
 (def dtf (DateTimeFormatter/ofPattern "uuuu-MM-dd HH:mm:ss" Locale/ENGLISH))
 
@@ -104,16 +98,14 @@
   (->> (jdbc/execute!
          conn
          ["select id, datetime(date_time,'unixepoch') as date_time,
-            datetime(release_date, 'unixepoch') as release_date, url,
-            datetime(finished_date_time,'unixepoch') as finished_date_time
-     from manifest
-     order by date_time desc"]
+            datetime(release_date, 'unixepoch') as release_date, url
+           from manifest
+           order by date_time desc"]
          {:builder-fn rs/as-unqualified-maps})
        (map (fn [m]
               (-> m
                   (update :date_time parse-local-date-time)
-                  (update :release_date parse-local-date)
-                  (update :finished_date_time parse-local-date-time))))))
+                  (update :release_date parse-local-date))))))
 
 (defn model
   [config]
@@ -153,12 +145,15 @@
           (jdbc/execute-batch! txn sql batch {}))))))
 
 (defn write-from-ch
-  [conn ch parse sql]
-  (loop []
-    (when-let [batch (async/<!! ch)]
-      (jdbc/with-transaction [txn conn]
-        (jdbc/execute-batch! txn sql (map parse batch) {}))
-      (recur))))
+  ([conn ch parse sql]
+   (write-from-ch conn ch parse sql 0))
+  ([conn ch parse sql delay]
+   (loop []
+     (when-let [batch (async/<!! ch)]
+       (jdbc/with-transaction [txn conn]
+         (jdbc/execute-batch! txn sql (map parse batch) {}))
+       (when (pos-int? delay) (^[long] Thread/sleep delay))
+       (recur)))))
 
 (defn open-db
   "Open SQLite database. See https://github.com/xerial/sqlite-jdbc/blob/master/USAGE.md
@@ -168,38 +163,38 @@
   (jdbc/get-datasource {:dbtype "sqlite" :dbname (str dbname)}))
 
 (defn create-db
-  "Create a database file 'database-file' by importing the NHSPD csv file using
-  the configuration 'config'.
+  "Create a database file 'database-file'. Optionally imports data from 'ch' if
+  provided; this occurs prior to indexing so is faster than if performed after
+  database creation.
   Parameters:
   - dbname  : JDBC 'dbname' - essentially path to sqlite file
   - ch      : clojure.core.async channel with batches of postcode data
-  - release : release data (:date and :url)
   - config  : optional configuration map:
-               |- :cols - sequence of NHSPD columns
+               |- :release - :date and :url of release
+               |- :cols    - sequence of NHSPD columns
                |- :profile - one of :core :active :current :all"
-  [dbname ch release config]
+  [dbname ch {:keys [release cols profile] :as config}]
   (let [ds (open-db dbname)
         {:keys [parse create-tables create-indexes insert]} (model config)]
     (execute-stmts ds create-tables)
     (set-user-version! ds version)
-    (let [complete-fn (insert-manifest ds release)]
-      (execute-stmts ds ["pragma journal_mode = WAL"
-                         "pragma synchronous = normal"
-                         "pragma journal_size_limit = 6144000"])
-      (write-from-ch ds ch parse insert)
-      (execute-stmts ds create-indexes)
-      (complete-fn)
-      (execute-stmts ds ["pragma journal_mode = DELETE"])
-      (jdbc/execute-one! ds ["vacuum"]))))
+    (insert-manifest ds release)
+    (execute-stmts ds ["pragma journal_mode = WAL"
+                       "pragma synchronous = normal"
+                       "pragma journal_size_limit = 6144000"])
+    (when ch (write-from-ch ds ch parse insert))
+    (execute-stmts ds create-indexes)
+    (execute-stmts ds ["pragma journal_mode = DELETE"])
+    (jdbc/execute-one! ds ["vacuum"])))
 
 (defn update-db
-  "Update a database in-place from the clojure.core.async channel specified."
-  [ds ch release]
+  "Update a database in-place from the clojure.core.async channel specified. "
+  [ds ch {:keys [release delay]}]
   (let [{:keys [parse upsert]} (model {:cols (column-names ds)})]
     (check-version ds)
-    (let [complete-fn (insert-manifest ds release)]
-      (write-from-ch ds ch parse upsert)
-      (complete-fn))
+    (when ch
+      (insert-manifest ds release)
+      (write-from-ch ds ch parse upsert delay))
     (jdbc/execute-one! ds ["vacuum"])))
 
 
@@ -231,8 +226,7 @@
                                          avg(OSEAST1M) as OSEAST1M
                                          from NHSPD where PCD2 like ?" (str s "%")]
                                   {:builder-fn rs/as-unqualified-maps})]
-      {:PCD2     nil
-       :OSNRTH1M (some-> OSNRTH1M int)
+      {:OSNRTH1M (some-> OSNRTH1M int)
        :OSEAST1M (some-> OSEAST1M int)})))
 
 (defn os-grid-reference
@@ -243,17 +237,12 @@
   returned."
   [conn s]
   (if-let [pc (postcode conn s)]
-    (select-keys pc [:PCD2 :OSNRTH1M :OSEAST1M])
+    (select-keys pc [:OSNRTH1M :OSEAST1M])
     (avg-loc conn s)))
 
 (comment
   (def f "nhg25may.csv")
   (def conn (jdbc/get-connection "jdbc:sqlite:nhspd1.db"))
   (def ch (async/chan 1 (partition-all 500)))
-
-  (def model (model/nhspd {:profile :core}))
-  (jdbc/execute! conn [create-nhspd-sql])
-  (sql-create-indexes conn)
-  (sql-drop-indexes conn)
-  (write-nhspd conn nhspd))
+  (def model (model/nhspd {:profile :core})))
 

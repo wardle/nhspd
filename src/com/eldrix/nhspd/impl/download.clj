@@ -1,11 +1,12 @@
 (ns com.eldrix.nhspd.impl.download
   (:require [clojure.core.async :as async]
-            [clojure.core.async :as a]
             [clojure.data.csv :as csv]
             [clojure.edn :as edn]
             [clojure.java.io :as io]
+            [clojure.tools.logging.readable :as log]
             [hato.client :as hc])
   (:import (java.io File InputStreamReader)
+           (java.nio.file Files)
            (java.time LocalDate)
            (java.util.zip ZipFile)))
 
@@ -15,10 +16,15 @@
   - url : the URL to fetch
   - out   : (optional) the java.io.File/Writer/OutputStream to which to write.
   If no `out` specified, a temporary file will be created and returned."
-  ([url] (download-url url (File/createTempFile "nhspd" ".zip")))
+  ([url]
+   (download-url url (File/createTempFile "nhspd" ".zip")))
   ([url out]
    (io/copy (:body (hc/get url {:as :stream :http-client {:redirect-policy :always}})) out)
    out))
+
+(defn delete
+  [f]
+  (.delete (io/file f)))
 
 (defn latest-release
   "Returns information about the latest NHSPD release.
@@ -69,17 +75,33 @@
        (stream-csv (.getInputStream zf all-pcodes-file) ch close?)
        (throw (ex-info "Unable to find postcode file in archive. We looked for a file 'nhg*.csv'. Has archive format changed?" {}))))))
 
+(defn stream-file
+  "Blocking; stream file 'f' to clojure.core.async channel 'ch'. Handles CSV and
+  zip files"
+  ([f ch]
+   (stream-file f ch true))
+  ([f ch close?]
+   (let [content-type (Files/probeContentType (.toPath (io/file f)))]
+     (log/debug "streaming file" {:f f :content-type content-type})
+     (case content-type
+       "application/zip" (stream-zip f ch close?)
+       "text/csv" (stream-csv f ch close?)
+       (throw (ex-info "File not recognised" {:f f :content-type content-type}))))))
+
+(defn stream-files
+  "Stream the contents of each file in 'files' to the channel 'ch'."
+  [ch files close?]
+  (loop [files files]
+    (if-let [f (first files)]
+      (do
+        (log/info "processing:" f)
+        (stream-file f ch false)
+        (recur (rest files)))
+      (when close? (async/close! ch)))))
+
 (comment
-  (def release (get-latest-release))
+  (def release (latest-release))
   release
   ;; this is just for testing using an already downloaded release file
   (defn fake-download-url []
-    (File. "/Users/mark/Downloads/nhspd-nov-2020.zip"))
-
-  (def downloaded (fake-download-url))
-  (def downloaded (download-url (:url release)))
-  downloaded
-
-  (def ch (a/chan))
-  (a/thread (stream-release downloaded ch))
-  (a/<!! ch))
+    (File. "/Users/mark/Downloads/nhspd-nov-2020.zip")))

@@ -14,6 +14,6 @@
   [{:keys [OSEAST1M OSNRTH1M] :as pc}]
   (if (and OSEAST1M OSNRTH1M)
     (let [{:keys [latitude longitude]}
-          (geo/easting-northing->latitude-longitude {:easting OSEAST1M :northing OSEAST1M} :national-grid)]
+          (geo/easting-northing->latitude-longitude {:easting OSEAST1M :northing OSNRTH1M} :national-grid)]
       (assoc pc :WGS84LAT latitude :WGS84LNG longitude))
     pc))
