@@ -5,7 +5,7 @@ pom.xml.asc
 *.iml
 *.class
 *.db
-*.csv
+/*.csv
 /lib/
 /classes/
 /target/
