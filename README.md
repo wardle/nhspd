@@ -5,9 +5,19 @@
 [![Tests](https://github.com/wardle/nhspd/actions/workflows/test.yml/badge.svg)](https://github.com/wardle/nhspd/actions/workflows/test.yml)
 [![Clojars Project](https://img.shields.io/clojars/v/com.eldrix/nhspd.svg)](https://clojars.org/com.eldrix/nhspd)
 
-Support for the UK NHS Postcode Directory, linking all UK postcodes to health data.
+Support for the UK NHS Postcode Directory (NHSPD), linking all UK postcodes to health data.
 
 The NHSPD is published by the Office of National Statistics in the UK.
+
+> [!NOTE]
+> This software provides automated download and updating of the NHS Postcode Directory into a SQLite database.
+> 
+> For automated testing, it includes seven postal codes based on the NHSPD release and so contains Royal Mail, Gridlink, 
+> LPS (Northern Ireland), Ordnance Survey and ONS Intellectual Property Rights
+> 
+> Contains OS data © Crown copyright and database right 2025-
+> Contains Royal Mail data © Royal Mail copyright and database right 2025-
+> Source: Office for National Statistics licensed under the Open Government Licence v.3.0
 
 ## Getting started
 
