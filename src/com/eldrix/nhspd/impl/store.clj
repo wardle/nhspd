@@ -80,7 +80,7 @@
 (defn insert-manifest
   "Records a new row into the store manifest. NOP if 'release' is nil."
   [conn {:keys [date url] :as release}]
-  (when release
+  (when date
     (jdbc/execute-one!
       conn
       ["insert into manifest (date_time, release_date, url) values (unixepoch(?),unixepoch(?),?) returning id"
