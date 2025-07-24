@@ -165,8 +165,9 @@ services used by other organisations. They issue the NHSPD quarterly."
         release (when release {:date release})]             ;; create a 'fake' release based on inputted date
     (log/info "creating nhspd index from files" files)
     (async/thread (dl/stream-files ch files true))
-    (->NHSPD (store/create-db f ch {:release release :profile profile :cols cols}))
-    (log/info "nhspd index creation complete")))
+    (let [svc (->NHSPD (store/create-db f ch {:release release :profile profile :cols cols}))]
+      (log/info "nhspd index creation complete")
+      svc)))
 
 (comment
   (dl/latest-release)

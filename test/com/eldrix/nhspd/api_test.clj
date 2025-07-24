@@ -14,7 +14,7 @@
   ([config f]
    (let [temp-db (File/createTempFile "test-nhspd" ".db")]
      (try
-       (let [svc (api/create-from-files (.getPath temp-db) [(io/resource "nhspd-test-data.csv")] config)]
+       (let [svc (api/create-from-files temp-db [(io/resource "nhspd-test-data.csv")] config)]
          (f svc))
        (finally (.delete temp-db))))))
 
