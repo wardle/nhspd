@@ -8,6 +8,7 @@ Geography, who provide geographic support to the Office for National Statistics 
 services used by other organisations. They issue the NHSPD quarterly."
   (:require
     [clojure.core.async :as async]
+    [clojure.tools.logging.readable :as log]
     [com.eldrix.nhspd.impl.coords :as coords]
     [com.eldrix.nhspd.impl.download :as dl]
     [com.eldrix.nhspd.impl.model :as model]
@@ -120,18 +121,22 @@ services used by other organisations. They issue the NHSPD quarterly."
    (let [{:keys [url] :as release} (dl/latest-release)
          zipfile (dl/download-url url)
          ch (async/chan 1 (partition-all 1000))]
+     (log/info "updating nhspd index from latest release:" release)
      (async/thread
        (dl/stream-zip zipfile ch true))
      (store/update-db (.-ds svc) ch {:release release :delay delay})
-     (dl/delete zipfile))))
+     (dl/delete zipfile)
+     (log/info "index update complete"))))
 
 (defn update-from-files
   "Import 'files' into existing service."
   [svc files {:keys [release delay]}]
   (let [ch (async/chan 1 (partition-all 1000))
         release (when release {:date release})]
+    (log/info "updating nhspd index from:" files)
     (async/thread (dl/stream-files ch files true))
-    (store/update-db (.-ds svc) ch {:release release :delay delay})))
+    (store/update-db (.-ds svc) ch {:release release :delay delay})
+    (log/info "index update complete")))
 
 ;;
 ;;
@@ -143,21 +148,27 @@ services used by other organisations. They issue the NHSPD quarterly."
    (create-latest f nil))
   ([f config]
    (let [{:keys [url] :as release} (dl/latest-release)
+         _ (log/info "creating nhspd index from latest release" release)
          zipfile (dl/download-url url)
          ch (async/chan 1 (partition-all 1000))]
+     (log/info "download of latest release complete; importing" zipfile)
      (async/thread
        (dl/stream-zip zipfile ch true))
      (store/create-db f ch (assoc config :release release))
-     (dl/delete zipfile))))
+     (dl/delete zipfile)
+     (log/info "nhspd index creation complete"))))
 
 (defn create-from-files
   "Create database 'f' by importing 'files'. Returns created NHSPD 'service'."
   [f files {:keys [profile cols release]}]
   (let [ch (async/chan 1 (partition-all 1000))
-        release (when release {:date release})]
+        release (when release {:date release})]             ;; create a 'fake' release based on inputted date
+    (log/info "creating nhspd index from files" files)
     (async/thread (dl/stream-files ch files true))
-    (->NHSPD (store/create-db f ch {:release release :profile profile :cols cols}))))
+    (->NHSPD (store/create-db f ch {:release release :profile profile :cols cols}))
+    (log/info "nhspd index creation complete")))
 
 (comment
   (dl/latest-release)
+  (create-latest "latest-nhspd.db")
   (create-from-files "nhspd.db" ["nhg25may.csv"] {:release (dl/latest-release), :profile :core}))
