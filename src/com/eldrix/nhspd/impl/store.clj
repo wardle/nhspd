@@ -10,7 +10,7 @@
     [next.jdbc :as jdbc]
     [next.jdbc.result-set :as rs])
   (:import (java.io InputStreamReader)
-           (java.time LocalDate LocalDateTime)
+           (java.time LocalDate LocalDateTime ZoneId)
            (java.time.format DateTimeFormatter)
            (java.util Locale)
            (javax.sql DataSource)))
@@ -38,7 +38,7 @@
 (defn create-tables-sql
   "Return SQL statements to create the nhspd tables."
   [fields]
-  ["CREATE TABLE IF NOT EXISTS MANIFEST (id integer primary key, date_time integer not null, release_date integer not null, url text)"
+  ["CREATE TABLE IF NOT EXISTS MANIFEST (id integer primary key, date_time datetime not null, release_date date not null, url text)"
    (str "CREATE TABLE IF NOT EXISTS NHSPD ("
         (str/join ","
                   (map (fn [{nm :name t :type pk :pk nocase :nocase}]
@@ -77,31 +77,31 @@
                (let [n# (name n)]
                  (str "drop index " n#))))))
 
-(defn insert-manifest
-  "Records a new row into the store manifest. NOP if 'release' is nil."
-  [conn {:keys [date url] :as release}]
-  (when date
-    (jdbc/execute-one!
-      conn
-      ["insert into manifest (date_time, release_date, url) values (unixepoch(?),unixepoch(?),?) returning id"
-       (LocalDateTime/now) date url]
-      {:builder-fn rs/as-unqualified-maps})))
-
+(def df (DateTimeFormatter/ofPattern "uuuu-MM-dd" Locale/ENGLISH))
 (def dtf (DateTimeFormatter/ofPattern "uuuu-MM-dd HH:mm:ss" Locale/ENGLISH))
 
 (defn parse-local-date-time [s]
   (some-> s (LocalDateTime/parse dtf)))
 (defn parse-local-date [s]
-  (some-> s (LocalDate/parse dtf)))
+  (some-> s (LocalDate/parse df)))
+
+(defn insert-manifest
+  "Records a new row into the store manifest. NOP if 'release' is nil."
+  [conn {:keys [^LocalDate date url] :as release}]
+  (when date
+    (jdbc/execute-one!
+      conn
+      ["insert into manifest (date_time, release_date, url) values (?,?,?) returning id"
+       (.format (LocalDateTime/now) dtf)
+       (.format date df)
+       url]
+      {:builder-fn rs/as-unqualified-maps})))
 
 (defn manifests
   [conn]
   (->> (jdbc/execute!
          conn
-         ["select id, datetime(date_time,'unixepoch') as date_time,
-            datetime(release_date, 'unixepoch') as release_date, url
-           from manifest
-           order by date_time desc"]
+         ["select id, date_time, release_date, url from manifest order by date_time desc"]
          {:builder-fn rs/as-unqualified-maps})
        (map (fn [m]
               (-> m
@@ -189,7 +189,8 @@
                        "pragma journal_size_limit = 6144000"])
     (when ch (write-from-ch ds ch parse insert))
     (execute-stmts ds create-indexes)
-    (execute-stmts ds ["pragma journal_mode = DELETE"])
+    (jdbc/execute! ds ["pragma journal_mode = DELETE"])
+    (jdbc/execute! ds ["pragma optimize"])
     (jdbc/execute-one! ds ["vacuum"])
     ds))
 
