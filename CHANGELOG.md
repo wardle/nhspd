@@ -1,6 +1,6 @@
 # Changelog
 
-## v2.0.x (2025)
+## v2.0.74 (2025-07-24)
 
 **Major architectural change**: Replace Lucene-based directory index with SQLite database.
 
