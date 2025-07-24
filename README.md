@@ -13,7 +13,8 @@ The NHSPD is published by the Office of National Statistics in the UK.
 > This software provides automated download and updating of the NHS Postcode Directory into an SQLite database.
 > 
 > For automated testing, it includes seven postal codes based on the NHSPD release and so contains Royal Mail, Gridlink, 
-> LPS (Northern Ireland), Ordnance Survey and ONS Intellectual Property Rights
+> LPS (Northern Ireland), Ordnance Survey and ONS Intellectual Property Rights. More complete testing is performed 
+> through downloading the latest NHSPD release as part of automated test scripts.
 > 
 > Contains OS data © Crown copyright and Royal Mail data © Royal Mail copyright 
 > 
