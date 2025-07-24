@@ -83,11 +83,11 @@
 (defn import-files
   [{:keys [db profile column release delay]} args]
   (if (.exists (io/file db))
-    (do (println "importing files into existing database")
-        (nhspd/create-from-files db args {:profile profile :cols column :release release}))
     (let [svc (nhspd/open db)]
-      (println "creating new database from files")
-      (nhspd/update-from-files svc args {:release release :delay delay}))))
+      (println "importing files into existing database:" db)
+      (nhspd/update-from-files svc args {:release release :delay delay}))
+    (do (println "creating new database" db" by importing" (str/join " " args))
+        (nhspd/create-from-files db args {:profile profile :cols column :release release}))))
 
 (def commands
   {"create" create-db
