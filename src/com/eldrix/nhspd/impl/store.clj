@@ -227,13 +227,14 @@
   must be two characters or greater."
   [conn s]
   (when (>= (count s) 2)
-    (when-let [{:keys [OSNRTH1M OSEAST1M]}
+    (let [{:keys [OSNRTH1M OSEAST1M]}
                (jdbc/execute-one! conn
                                   ["select avg(OSNRTH1M) as OSNRTH1M, avg(OSEAST1M) as OSEAST1M
                                          from NHSPD where PCD2 like ?" (str s "%")]
                                   {:builder-fn rs/as-unqualified-maps})]
-      {:OSNRTH1M (some-> OSNRTH1M int)
-       :OSEAST1M (some-> OSEAST1M int)})))
+      (when (and OSNRTH1M OSEAST1M)
+        {:OSNRTH1M (int OSNRTH1M)
+         :OSEAST1M (int OSEAST1M)}))))
 
 (defn os-grid-reference
   "Return Ordnance Survey grid reference data for a postcode.

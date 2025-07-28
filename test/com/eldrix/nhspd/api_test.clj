@@ -63,14 +63,15 @@
             (is (= "CF14 4XW" PCD2))))))))
 
 (deftest ^:live test-real-data-integration
-  (testing "Integration with real NHSPD data"
-    (let [temp-db (File/createTempFile "nhspd" ".db")]
-      (try
-        (api/create-latest (.getPath temp-db) {:profile :all})
-        (with-open [svc (api/open (.getPath temp-db))]
-          (let [{:keys [n] :as status} (api/status svc)
-                {:keys [PCD2]} (api/postcode svc "CF14 4XW")]
-            (pp/pprint status)
-            (is (> n 2000000) "Should be over 2 million postcodes")
-            (is (= "CF14 4XW" PCD2))))
-        (finally (.delete temp-db))))))
+  (let [temp-db (File/createTempFile "nhspd" ".db")]
+    (try
+      (api/create-latest (.getPath temp-db) {:profile :all})
+      (with-open [svc (api/open (.getPath temp-db))]
+        (let [{:keys [n] :as status} (api/status svc)
+              {:keys [PCD2] :as pc} (api/postcode svc "CF14 4XW")]
+          (pp/pprint status)
+          (is (> n 2000000) "Should be over 2 million postcodes")
+          (is (= "CF14 4XW" PCD2))
+          (is (nil? (api/os-grid-reference svc "BBBBBBB")) "Invalid postcode should return nil grid reference")
+          (is (= (select-keys pc [:OSNRTH1M :OSEAST1M]) (api/os-grid-reference svc "CF14 4XW")))))
+      (finally (.delete temp-db)))))

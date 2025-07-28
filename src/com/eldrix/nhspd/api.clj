@@ -170,6 +170,10 @@ services used by other organisations. They issue the NHSPD quarterly."
       svc)))
 
 (comment
+  (def svc (open "nhspd.db"))
+  (postcode svc "CF14 4XW")
+  (os-grid-reference svc "CF14 4XW")
+  (os-grid-reference svc "AAAAAA")
   (dl/latest-release)
   (create-latest "latest-nhspd.db")
   (create-from-files "nhspd.db" ["nhg25may.csv"] {:release (dl/latest-release), :profile :core}))
